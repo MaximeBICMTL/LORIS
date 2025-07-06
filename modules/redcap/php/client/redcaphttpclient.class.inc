@@ -693,7 +693,7 @@ class RedcapHttpClient
         }
 
         // request
-        $records = $this->_getRecords(
+        $records = $this->getRecords(
             [$instrument_name],
             [$unique_event_name],
             [$record_id]
@@ -765,7 +765,7 @@ class RedcapHttpClient
      *
      * @return array an array of records (array of [field name => field values])
      */
-    private function _getRecords(
+    public function getRecords(
         array $instrument_names = [],
         array $unique_event_names = [],
         array $record_ids = []
