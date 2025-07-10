@@ -194,6 +194,32 @@ class RedcapMapper
         return $visit_mapping ? $visit_mapping : null;
     }
 
+    public function getVisitRedcapEvent(RedcapConfigVisit $visit): RedcapEvent
+    {
+        // Get the list of all the REDCap arms for this REDCap project.
+        $redcap_arms = $this->_redcap_client->getArms();
+
+        // Find the REDCap arm that matches the configuration arm name.
+        $redcap_arm = array_find(
+            $redcap_arms,
+            fn($redcap_arm) => $redcap_arm->name === $visit->redcap_arm_name,
+        );
+
+        // Get the list of all the REDCap events for this REDCap project.
+        $redcap_events = $this->_redcap_client->getEvents();
+
+        // Find the REDCap event that matches the arm and configuration event name.
+        $redcap_event = array_find(
+            $redcap_events,
+            fn($redcap_event) => (
+                $redcap_event->arm_number === $redcap_arm->number
+                && $redcap_event->name === $visit->redcap_event_name
+            ),
+        );
+
+        return $redcap_event;
+    }
+
     /**
      *  Check that a session exists or create it using the REDCap module automatic
      *  session creation configuration. Throw an exception if the session does not
