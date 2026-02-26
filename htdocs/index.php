@@ -122,6 +122,82 @@ $entrypoint    = new \LORIS\Router\BaseRouter(
 $serverrequest = $serverrequest->withAttribute("user", $user)
     ->withAttribute("loris", $lorisInstance);
 
+// Get the requested URI
+$request_uri = $_SERVER['REQUEST_URI'];
+
+// Check if the request starts with /ephys/
+if (strpos($request_uri, '/ephys/') === 0) {
+    // Target URL
+    $target_url = 'http://localhost:8000' . $request_uri;
+
+    $lorisInstance->getModule('api')->registerAutoloader();
+
+    $login = new \LORIS\api\Endpoints\Login($lorisInstance);
+    $token = $login->getEncodedToken($user);
+
+    // Initialize cURL
+    $ch = curl_init();
+
+    // Set cURL options
+    curl_setopt($ch, CURLOPT_URL, $target_url);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+    curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 0 = no timeout
+
+    // Pass through the request method
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
+
+    // Pass through request headers
+    $headers = ['Authorization: Bearer ' . $token];
+
+    foreach ($_SERVER as $key => $value) {
+        if (substr($key, 0, 5) == 'HTTP_') {
+            $header = str_replace('_', '-', substr($key, 5));
+            $headers[] = "$header: $value";
+        }
+    }
+
+    // Add content-type if present
+    if (isset($_SERVER['CONTENT_TYPE'])) {
+        $headers[] = 'Content-Type: ' . $_SERVER['CONTENT_TYPE'];
+    }
+
+    if (!empty($headers)) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    }
+
+    // Pass through POST data
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
+    }
+
+    // Execute cURL request
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+
+    // Get response headers and body
+    $response_headers = substr($response, 0, $header_size);
+    $response_body = substr($response, $header_size);
+
+    // Close cURL
+    curl_close($ch);
+
+    // Forward response headers
+    $headers_list = explode("\r\n", $response_headers);
+    foreach ($headers_list as $header) {
+        if (!empty($header) && !preg_match('/Transfer-Encoding/i', $header)) {
+            header($header);
+        }
+    }
+
+    // Output response body
+    echo $response_body;
+    exit;
+}
+
 // Now handle the request.
 $response = $middlewarechain->process($serverrequest, $entrypoint);
 

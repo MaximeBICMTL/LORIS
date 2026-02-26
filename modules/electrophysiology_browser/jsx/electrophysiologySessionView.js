@@ -358,6 +358,9 @@ class ElectrophysiologySessionView extends Component {
           eegMontage,
         } = this.state.database[i];
         const file = this.state.database[i].file;
+        const megSensorsURL = `${loris.BaseURL}/ephys/${file.id}/meg/sensors`;
+        const megHeadShapeURL = `${loris.BaseURL}/ephys/${file.id}/meg`
+          + `/headshape`;
         const channelsURL = `${loris.BaseURL}/api/v0.0.4-dev/candidates`
           + `/${this.state.patient.info.pscid}`
           + `/${this.state.patient.info.visit_label}/recordings/${file.name}`
@@ -415,6 +418,8 @@ class ElectrophysiologySessionView extends Component {
                   events={events}
                   electrodesURL={electrodesURL}
                   coordSystemURL={coordSystemURL}
+                  megSensorsURL={megSensorsURL}
+                  megHeadShapeURL={megHeadShapeURL}
                   hedSchema={hedSchema}
                   datasetTags={datasetTags}
                   datasetTagEndorsements={datasetTagEndorsements}

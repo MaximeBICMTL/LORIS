@@ -65,7 +65,10 @@ export type CoordinateSystem = {
   description: string | 'n/a'
 };
 
-export type Electrode = {
+export type SensorType = 'electrode' | 'meg-sensor' | 'head-shape-point';
+
+export type Sensor = {
+  type: SensorType,
   name: string,
   channelIndex?: number,
   position: [number, number, number],

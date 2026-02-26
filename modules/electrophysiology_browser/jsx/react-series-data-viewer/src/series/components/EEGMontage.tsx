@@ -4,18 +4,15 @@ import {_3d} from 'd3-3d';
 import {Group} from '@visx/group';
 import ResponsiveViewer from './ResponsiveViewer';
 import {CheckboxElement} from './Form';
-import {CoordinateSystem, Electrode} from '../store/types';
-import {setHidden} from '../store/state/montage';
-import React, {useState, useEffect, SetStateAction, Dispatch} from 'react';
+import React, {useState, useEffect, SetStateAction, Dispatch, useContext, useCallback} from 'react';
 import Panel from './Panel';
+import SensorTypesSelector from './SensorTypesSelector';
 import {RootState} from '../store';
 import {useTranslation} from "react-i18next";
+import {CoordSystemContext, SensorsContext} from '../../eeglab/EEGLabSeriesProvider';
+import { SensorType } from '../store/types';
 
 type CProps = {
-  electrodes: Electrode[],
-  hidden: number[],
-  coordinateSystem: CoordinateSystem,
-  setHidden: (_: number[]) => void,
   chunksURL: string,
   colorMap?: {
     color: string,
@@ -36,10 +33,6 @@ type CProps = {
 
 const EEGMontage = (
   {
-    electrodes,
-    hidden,
-    coordinateSystem,
-    setHidden,
     chunksURL,
     colorMap,
     withPanel,
@@ -53,6 +46,10 @@ const EEGMontage = (
     setChannelSelectorVisible,
     eegMontageName,
   }: CProps) => {
+
+  const coordinateSystem = useContext(CoordSystemContext);
+  let electrodes = useContext(SensorsContext);
+
   // if (electrodes.length === 0 || coordinateSystem === null) return null;
   const {t} = useTranslation();
   const [angleX, setAngleX] = useState(0);
@@ -78,6 +75,41 @@ const EEGMontage = (
       return electrode ? index : undefined;
     }).filter(e => e !== undefined).map(getChannelName).join(channelDelimiter)
   );
+
+  const createSensorTypeState = (electrodesArray: typeof electrodes) => {
+    return electrodesArray.reduce((types, electrode) => {
+      const type = electrode.type;
+      if (types[type] === undefined) {
+        types[type] = { visible: true, sensorsCount: 0 };
+      }
+      types[type].sensorsCount += 1;
+      return types;
+    }, {} as Record<SensorType, {visible: boolean; sensorsCount: number}>);
+  };
+
+  const [sensorTypes, setSensorTypes] = useState<Record<SensorType, {visible: boolean; sensorsCount: number}>>(
+    () => createSensorTypeState(electrodes)
+  );
+
+  const isSensorTypeVisible = useCallback((sensorType: SensorType) => {
+    return sensorTypes[sensorType]?.visible ?? true;
+  }, [sensorTypes]);
+
+  useEffect(() => {
+    setSensorTypes((current) => {
+      return electrodes.reduce((types, electrode) => {
+        const type = electrode.type;
+        if (types[type] === undefined) {
+          types[type] = {
+            visible: current[type]?.visible ?? true,
+            sensorsCount: 0,
+          };
+        }
+        types[type].sensorsCount += 1;
+        return types;
+      }, {} as Record<SensorType, {visible: boolean; sensorsCount: number}>);
+    });
+  }, [electrodes]);
 
   let infoMessageTimeout = null;
 
@@ -463,10 +495,26 @@ const EEGMontage = (
     setClicked3DElectrode(-1);
   }
 
+  // Get the color of the type of a sensor using its ID.
+  const getSensorTypeColor = useCallback((sensorId: number) => {
+    switch (electrodes[sensorId].type) {
+      case 'electrode':
+        return '#B28B00';
+      case 'meg-sensor':
+        return '#1A3B66';
+      case 'head-shape-point':
+        return '#8B2A2A';
+    }
+  }, [electrodes]);
+
   const Montage3D = () => (
     <Group className={cssClass + (holdingShift ? ' cursor-pointer' : '')}>
       {point3D.rotateZ(angleZ).rotateX(angleX)(scatter3D).map((point, i) => {
-        const color = selectedElectrodes[i] ? colorMap?.color : '#000';
+        if (!isSensorTypeVisible(electrodes[i].type)) return null;
+        const color = selectedElectrodes[i]
+          ? colorMap?.color
+          : getSensorTypeColor(i);
+
         return (
           <circle
             key={i}
@@ -522,6 +570,7 @@ const EEGMontage = (
         fill='white'
       />
       {scatter2D.map((point, i) => {
+        if (!isSensorTypeVisible(electrodes[i].type)) return null;
         const textColor = (
           colorMap?.mode === 'outline' && selectedElectrodes[i]
         ) ? colorMap?.color : '#000';
@@ -609,25 +658,29 @@ const EEGMontage = (
         </ResponsiveViewer>
       }
       <div
-        className="btn-group"
         style={{
-          top: '0',
-          left: '15px',
+          top: 0,
           position: 'absolute',
           zIndex: 1,
+          padding: '0 1rem',
+          width: '100%',
         }}
       >
-        <div>
-          <button
-            className={
-              'btn btn-xs btn-default' + (!view3D ? ' active' : '')
-            }
-            onClick={() =>setView3D(false)}
-          >2D</button>
-          <button
-            className={'btn btn-xs btn-default' + (view3D ? ' active' : '')}
-            onClick={() => setView3D(true)}
-          >3D</button>
+        <div style={{display: 'flex', justifyContent: 'space-between', gap: '1rem'}}>
+          <div>
+            <button
+              className={'btn btn-xs btn-default' + (!view3D ? ' active' : '')}
+              onClick={() => setView3D(false)}
+            >2D</button>
+            <button
+              className={'btn btn-xs btn-default' + (view3D ? ' active' : '')}
+              onClick={() => setView3D(true)}
+            >3D</button>
+          </div>
+          <SensorTypesSelector
+            sensorTypes={sensorTypes}
+            setSensorTypes={setSensorTypes}
+          />
         </div>
       </div>
       {
@@ -855,9 +908,6 @@ const EEGMontage = (
 };
 
 EEGMontage.defaultProps = {
-  montage: [],
-  hidden: [],
-  coordinateSystem: null,
   chunksURL: '',
   withPanel: true,
   contentHeight: '300px',
@@ -867,17 +917,8 @@ EEGMontage.defaultProps = {
 
 export default connect(
   (state: RootState) => ({
-    hidden: state.montage.hidden,
-    electrodes: state.montage.electrodes,
-    coordinateSystem: state.montage.coordinateSystem,
     chunksURL: state.dataset.chunksURL,
     channelDelimiter: state.dataset.channelDelimiter,
     eegMontageName: state.dataset.eegMontageName,
   }),
-  (dispatch: (_: any) => void) => ({
-    setHidden: R.compose(
-      dispatch,
-      setHidden,
-    ),
-  })
 )(EEGMontage);
