@@ -143,7 +143,6 @@ type CProps = {
   setRightPanel: (_: RightPanel | void) => void,
   chunksURL: string,
   channels: Channel[],
-  hidden: number[],
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   activeEpoch: number,
@@ -184,7 +183,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   setRightPanel,
   chunksURL,
   channels,
-  hidden,
   epochs,
   filteredEpochs,
   activeEpoch,
@@ -388,8 +386,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     store.dispatch(createAction(SET_CHANNELS)(channels));
     store.dispatch(createAction(UPDATE_VIEWED_CHUNKS)());
   }, [displayedChannelIndexes]);
-
-  const filteredChannels = channels.filter((_, i) => !hidden.includes(i));
 
   // Function used to update the pagination offset index, with checks to prevent invalid indexes.
   const updateOffsetIndex = useCallback((newOffsetIndex: number) => {
@@ -739,7 +735,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     return (
       <Group top={-viewerHeight/2} left={-viewerWidth/2}>
         <line y1="0" y2={viewerHeight} stroke="black" />
-        {filteredChannels.map((channel, i) => {
+        {channels.map((channel, i) => {
           const seriesRange = channelMetadata[channel.index]?.seriesRange;
           if (!seriesRange || !showAxisScaleLines) return null;
           return (
@@ -770,10 +766,10 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       !cursorRef.current && stackedView &&
       singleMode && hoveredChannels.length > 0
     )
-      ? filteredChannels.filter(
+      ? channels.filter(
         (channel) => hoveredChannels.includes(channel.index)
       )
-      : filteredChannels;
+      : channels;
 
     // Get the maximum range for each channel type based on the ranges of
     // the visible values of each visible channel of that type.
@@ -1358,7 +1354,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                   userSelect: 'none',
                 }}
               >{/* Below slice changes labels to be subset of channel choice */}
-                {filteredChannels
+                {channels
                   .slice(0, numDisplayedChannels)
                   .map((channel) => (
                   <div
@@ -1677,7 +1673,6 @@ SeriesRenderer.defaultProps = {
   viewerHeight: 400,
   channels: [],
   epochs: [],
-  hidden: [],
   limit: DEFAULT_MAX_CHANNELS,
 };
 
@@ -1756,7 +1751,6 @@ export default connect(
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
     activeEpoch: state.dataset.activeEpoch,
-    hidden: state.montage.hidden,
     limit: state.dataset.limit,
     loadedChannels: state.dataset.loadedChannels,
     domain: state.bounds.domain,

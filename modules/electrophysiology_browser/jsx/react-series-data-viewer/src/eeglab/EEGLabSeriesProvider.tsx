@@ -1,7 +1,6 @@
 import React, {
-  Component, createContext, createRef, useState, useEffect,
+  Component, createContext, createRef, useCallback, useEffect, useMemo, useState,
 } from 'react';
-import {tsvParse} from 'd3-dsv';
 import {applyMiddleware, createStore, Store} from 'redux';
 import {Provider} from 'react-redux';
 import {createEpicMiddleware} from 'redux-observable';
@@ -22,14 +21,15 @@ import {
 } from '../series/store/state/dataset';
 import {setDomain, setInterval} from '../series/store/state/bounds';
 import {
-  setCoordinateSystem, setElectrodes,
-} from '../series/store/state/montage';
-import {
-  ChannelInfo, ChannelInfos, ChannelMetadata, EventMetadata, HEDSchemaElement,
+  ChannelInfo, ChannelInfos, ChannelMetadata, CoordinateSystem, EventMetadata,
+  HEDSchemaElement, Sensor,
 } from '../series/store/types';
 import TriggerableModal from 'jsx/TriggerableModal';
 import DatasetTagger from '../series/components/DatasetTagger';
 import {InfoIcon} from '../series/components/components';
+import {
+  parseElectrodes, parseMegSensors, parseHeadShapePoints,
+} from '../series/store/logic/montage';
 
 declare global {
   interface Window {
@@ -44,6 +44,8 @@ type CProps = {
   epochsURL: string,
   electrodesURL: string,
   coordSystemURL: string,
+  megSensorsURL: string,
+  megHeadShapeURL: string,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
   datasetTagEndorsements: any,
@@ -76,12 +78,26 @@ export const ChannelInfosContext = createContext<ChannelInfo[]>([]);
 export const ChannelMetasContext = createContext<ChannelMetadata[]>([]);
 
 /**
+ *  The sensors context, which provides the EEG and MEG sensors present in the
+ *  acquisition.
+ */
+export const SensorsContext = createContext<Sensor[]>([]);
+
+/**
+ *  The coordinate system context, which provides the coordinate system of the
+ *  electrodes, if available.
+ */
+export const CoordSystemContext = createContext<CoordinateSystem | null>(null);
+
+/**
  * Function wrapper around the older `EEGLabSeriesProviderClass` class
  * component.
  */
 function EEGLabSeriesProvider(props: CProps) {
   const [channelInfos, setChannelInfos] = useState<ChannelInfo[]>([]);
   const [channelMetas, setChannelMetas] = useState<ChannelMetadata[]>([]);
+  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [coordSystem, setCoordSystem] = useState<CoordinateSystem | null>(null);
 
   // Fetch the channel BIDS information from the API.
   useEffect(() => {
@@ -90,13 +106,90 @@ function EEGLabSeriesProvider(props: CProps) {
     });
   }, [props.channelsURL]);
 
+  /**
+   * Update the sensors state by appending new sensors.
+   */
+  const updateSensors = useCallback((sensors: Sensor[]) => {
+    setSensors((prevSensors) => [
+      // Re-use the old sensors if they are present, or initialize with an
+      // empty list.
+      ...prevSensors,
+      // Append the new list of sensors.
+      ...sensors,
+    ]);
+  }, []);
+
+  // Fetch the coordinate system associated with that file.
+  useEffect(() => {
+    fetchJSON(props.coordSystemURL)
+      .then(({json}) => {
+        if (!json) {
+          return;
+        }
+
+        setCoordSystem({
+          name: json.EEGCoordinateSystem ?? 'Other',
+          units: json.EEGCoordinateUnits ?? 'm',
+          description: json.EEGCoordinateSystemDescription ?? 'n/a',
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.coordSystemURL]);
+
+  // Fetch the EEG electrodes associated with that file.
+  useEffect(() => {
+    fetchText(props.electrodesURL)
+      .then((text) => {
+        updateSensors(parseElectrodes(text));
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.electrodesURL]);
+
+  // Fetch the MEG sensors associated with that file.
+  useEffect(() => {
+    fetchJSON(props.megSensorsURL)
+      .then((json) => {
+        if (!json) {
+          return;
+        }
+
+        updateSensors(parseMegSensors(json));
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.megSensorsURL]);
+
+  // Fetch the MEG head shape points associated with that file.
+  useEffect(() => {
+    fetchJSON(props.megHeadShapeURL)
+      .then((json) => {
+        if (json === null) {
+          return;
+        }
+
+        updateSensors(parseHeadShapePoints(json));
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.megHeadShapeURL]);
+
   return (
     <ChannelInfosContext.Provider value={channelInfos}>
       <ChannelMetasContext.Provider value={channelMetas}>
-        <EEGLabSeriesProviderClass
-          {...props}
-          setChannelMetas={setChannelMetas}
-        />
+        <SensorsContext.Provider value={sensors}>
+          <CoordSystemContext.Provider value={coordSystem}>
+            <EEGLabSeriesProviderClass
+              {...props}
+              setChannelMetas={setChannelMetas}
+            />
+          </CoordSystemContext.Provider>
+        </SensorsContext.Provider>
       </ChannelMetasContext.Provider>
     </ChannelInfosContext.Provider>
   );
@@ -142,8 +235,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
     const {
       chunksURL,
       epochsURL,
-      electrodesURL,
-      coordSystemURL,
       hedSchema,
       datasetTags,
       datasetTagEndorsements,
@@ -378,46 +469,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
         searchVisibility: [],
       }));
     });
-
-
-    Promise.race(racers(fetchText, electrodesURL))
-      .then((text) => {
-        if (!(typeof text.json === 'string'
-          || text.json instanceof String)) return;
-        this.store.dispatch(
-          setElectrodes(
-            tsvParse(text.json).map(({name, x, y, z}) => ({
-              name: name,
-              channelIndex: null,
-              position: [parseFloat(x), parseFloat(y), parseFloat(z)],
-            }))
-          )
-        );
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    Promise.race(racers(fetchJSON, coordSystemURL))
-      .then( ({json}) => {
-        if (json) {
-          const {
-            EEGCoordinateSystem,
-            EEGCoordinateUnits,
-            EEGCoordinateSystemDescription,
-          } = json;
-          this.store.dispatch(
-            setCoordinateSystem({
-              name: EEGCoordinateSystem ?? 'Other',
-              units: EEGCoordinateUnits ?? 'm',
-              description: EEGCoordinateSystemDescription ?? 'n/a',
-            })
-          );
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
   }
 
   /**
