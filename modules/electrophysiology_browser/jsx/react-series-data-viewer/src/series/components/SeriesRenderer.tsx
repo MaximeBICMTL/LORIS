@@ -36,6 +36,7 @@ import {createChannelTypesDict, filterDisplayedChannels, filterSelectedChannels,
 import IntervalSelect from './IntervalSelect';
 import EventManager from './EventManager';
 import AnnotationForm from './AnnotationForm';
+import {TopographicMapButton} from './TopographicMap';
 import {RootState} from '../store';
 import {createAction} from 'redux-actions';
 
@@ -1061,8 +1062,17 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
             width: rightPanel ? '72.5%' : '96.5%',
             position: 'absolute',
             zIndex: 3,
+            display: 'flex',
+            justifyContent: 'space-between',
           }}
         >
+          {/* TODO: Use time selection instead of interval */}
+          <TopographicMapButton
+            physioFileID={physioFileID}
+            timeSelection={interval}
+            lowPass={lowPass !== 'none' ? LOW_PASS_FILTERS[lowPass].frequency : null}
+            highPass={highPass !== 'none' ? HIGH_PASS_FILTERS[highPass].frequency : null}
+          />
           <div id="right-panel-controls">
             <button
               className={'btn btn-primary'}
