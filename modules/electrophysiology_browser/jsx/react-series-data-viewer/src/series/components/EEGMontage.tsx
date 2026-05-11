@@ -11,6 +11,7 @@ import {RootState} from '../store';
 import {useTranslation} from "react-i18next";
 import {CoordSystemContext, SensorsContext} from '../../eeglab/EEGLabSeriesProvider';
 import { SensorType } from '../store/types';
+import Montage3D from '../../montage/Montage3D';
 
 type CProps = {
   chunksURL: string,
@@ -64,7 +65,6 @@ const EEGMontage = (
   const [selectedElectrodes, setSelectedElectrodes] = useState(
     electrodes.map((e, i) => colorMap?.ids?.includes(i))
   );
-  const [clicked3DElectrode, setClicked3DElectrode] = useState(-1);
   const [holdingShift, setHoldingShift] = useState(false);
 
   const getChannelName = (channelIndex: number) => {
@@ -484,62 +484,6 @@ const EEGMontage = (
     }
   }, []);
 
-  const handle3DMouseDown = (electrodeIndex: number) => {
-    setClicked3DElectrode(electrodeIndex);
-  }
-
-  const handle3DMouseUp = (electrodeIndex: number) => {
-    if (electrodeIndex === clicked3DElectrode) {
-      toggleElectrodeSelection(electrodeIndex);
-    }
-    setClicked3DElectrode(-1);
-  }
-
-  // Get the color of the type of a sensor using its ID.
-  const getSensorTypeColor = useCallback((sensorId: number) => {
-    switch (electrodes[sensorId].type) {
-      case 'electrode':
-        return '#B28B00';
-      case 'meg-sensor':
-        return '#1A3B66';
-      case 'head-shape-point':
-        return '#8B2A2A';
-    }
-  }, [electrodes]);
-
-  const Montage3D = () => (
-    <Group className={cssClass + (holdingShift ? ' cursor-pointer' : '')}>
-      {point3D.rotateZ(angleZ).rotateX(angleX)(scatter3D).map((point, i) => {
-        if (!isSensorTypeVisible(electrodes[i].type)) return null;
-        const color = selectedElectrodes[i]
-          ? colorMap?.color
-          : getSensorTypeColor(i);
-
-        return (
-          <circle
-            key={i}
-            cx={point.projected.x}
-            cy={point.projected.y}
-            r='4'
-            fill={color}
-            fillOpacity={color === '#000' ? '0.3' : '1'}
-            opacity='1'
-            onMouseDown={() => {
-              if (holdingShift) {
-                handle3DMouseDown(i);
-              }
-            }}
-            onMouseUp={() => {
-              if (holdingShift) {
-                handle3DMouseUp(i);
-              }
-            }}
-          />
-        );
-      })}
-    </Group>
-  );
-
   const Montage2D = () => (
     <Group className={cssClass}>
       <line
@@ -621,6 +565,10 @@ const EEGMontage = (
     </Group>
   );
 
+  const visibleSensors = electrodes.filter(
+    (electrode) => isSensorTypeVisible(electrode.type)
+  );
+
   const panelContent = <div
     className="row"
     style={{
@@ -630,23 +578,7 @@ const EEGMontage = (
   >
     <div style={{height: '100%', position: 'relative'}}>
       {view3D ?
-        <ResponsiveViewer
-          // @ts-ignore
-          mouseMove={!holdingShift ? dragged : undefined}
-          mouseDown={dragStart}
-          mouseUp={dragEnd}
-          mouseLeave={dragEnd}
-          chunksURL={chunksURL}
-          cssClass={
-            holdingShift
-              ? 'cursor-default'
-              : drag
-                ? 'cursor-grabbing'
-                : 'cursor-grab'
-          }
-        >
-          <Montage3D />
-        </ResponsiveViewer>
+        <Montage3D visibleSensors={visibleSensors} allSensors={electrodes} />
         :
         <ResponsiveViewer
           // @ts-ignore

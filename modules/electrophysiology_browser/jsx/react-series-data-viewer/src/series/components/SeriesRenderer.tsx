@@ -786,7 +786,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
           interval,
           chunkIds: channel.traces.flatMap((trace) => trace.chunks.map((chunk) => chunk.index)).sort(),
         },
-        () => {console.log("RECOMPUTE"); return getChannelVisibleRange(channel, interval) }
+        () => getChannelVisibleRange(channel, interval)
       );
 
       const range = max - min;
@@ -1700,7 +1700,6 @@ function getChannelVisibleRange(channel: Channel, interval: [number, number]): [
     }
 
     const [traceMin, traceMax] = computePercentileRange(values);
-    console.log(traceMin, traceMax);
     channelMin = Math.min(channelMin, traceMin);
     channelMax = Math.max(channelMax, traceMax);
   });
