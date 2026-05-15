@@ -1051,145 +1051,144 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     'HED_ENDORSEMENT': 'HED Endorsements',
   }
 
+  const ZoomControls = (
+    <div
+      style={{
+        textAlign: 'center',
+        margin: '20px 40px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <h5 className='col-xs-title btn-zoom'>
+          {t('Zoom', {ns: 'electrophysiology_browser'})}
+        </h5>
+        <div>
+          <input
+            type='button'
+            className='btn btn-primary btn-xs btn-zoom'
+            onClick={zoomReset}
+            disabled={
+              (interval[1] - interval[0]) ===
+              (DEFAULT_TIME_INTERVAL[1] - DEFAULT_TIME_INTERVAL[0])
+            }
+            value={t('Reset', {ns: 'loris'})}
+          />
+          <br/>
+          <input
+            type='button'
+            className='btn btn-primary btn-xs btn-zoom'
+            onClick={zoomIn}
+            disabled={(interval[1] - interval[0]) <= 0.1}
+            value='+'
+          />
+          <br/>
+          <input
+            type='button'
+            className='btn btn-primary btn-xs btn-zoom'
+            onClick={zoomOut}
+            disabled={
+              interval[0] === domain[0] &&
+              interval[1] === domain[1]
+            }
+            value='-'
+          />
+          <br/>
+          <input
+            type='button'
+            className='btn btn-primary btn-xs btn-zoom'
+            onClick={zoomToSelection}
+            disabled={!selectionCanBeZoomedTo}
+            value={t('Fit to Window', {ns: 'electrophysiology_browser'})}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
 {/*      {channels.length > 0 ? (*/}
         <>
-        <div
-          className='row'
-          style={{
-            width: rightPanel ? '72.5%' : '96.5%',
-            position: 'absolute',
-            zIndex: 3,
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* TODO: Use time selection instead of interval */}
-          <TopographicMapButton
-            physioFileID={physioFileID}
-            timeSelection={interval}
-            lowPass={lowPass !== 'none' ? LOW_PASS_FILTERS[lowPass].frequency : null}
-            highPass={highPass !== 'none' ? HIGH_PASS_FILTERS[highPass].frequency : null}
-          />
-          <div id="right-panel-controls">
-            <button
-              className={'btn btn-primary'}
-              disabled={!chunksURL || !chunksURL[0].includes('Face13') || rightPanel === 'annotationForm'}
-              onClick={() => {
-                confirmPanelClose(() => {
-                  setRightPanel('annotationForm')
-                  setCurrentAnnotation(null);
-                });
-              }}
-            >
-              {t('Add Event', {ns: 'electrophysiology_browser'})}
-            </button>
-            {
-              rightPanel === null && (
-                <button
-                  className={
-                    'btn btn-primary btn-blue'
-                    + (rightPanel ? ' active' : '')
-                  }
-                  onClick={() => {
-                    confirmPanelClose(() => {
-                      setRightPanel(
-                        rightPanel
-                          ? null
-                          : 'eventList'
-                      );
-                    })
+        <div className="row">
+          <div className={rightPanel ? 'col-md-9' : 'col-xs-12'}>
+            <div className="controls" style={{display: 'flex'}}>
+              {ZoomControls}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flexGrow: '1',
+                gap: '1rem',
+              }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  {rightPanel
-                    ? t('Close Panel', {ns: 'electrophysiology_browser'})
-                    : t('Display Events', {ns: 'electrophysiology_browser'})
-                  }
-                </button>
-              )
-            }
-            <ChannelTypesSelector
-              channelTypes={channelTypes}
-              setChannelTypes={setChannelTypes}
-            />
-          </div>
-        </div>
-        <div className={'row'}>
-          <div className={rightPanel ? 'col-md-9' : 'col-xs-12'}>
-            <div
-              className='col-xs-1'
-              style={{
-                textAlign: 'center',
-                position: 'absolute',
-                marginTop: '20px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: rightPanel ? 'unset' : 'center',
-                }}
-              >
-                <h5 className='col-xs-title btn-zoom'>
-                  {t('Zoom', {ns: 'electrophysiology_browser'})}
-                </h5>
-                <div>
-                  <input
-                    type='button'
-                    className='btn btn-primary btn-xs btn-zoom'
-                    onClick={zoomReset}
-                    disabled={
-                      (interval[1] - interval[0]) ===
-                      (DEFAULT_TIME_INTERVAL[1] - DEFAULT_TIME_INTERVAL[0])
+                  {/* TODO: Use time selection instead of interval */}
+                  <TopographicMapButton
+                    physioFileID={physioFileID}
+                    timeSelection={interval}
+                    lowPass={lowPass !== 'none' ? LOW_PASS_FILTERS[lowPass].frequency : null}
+                    highPass={highPass !== 'none' ? HIGH_PASS_FILTERS[highPass].frequency : null}
+                  />
+                  <div id="right-panel-controls">
+                    <button
+                      className={'btn btn-primary'}
+                      disabled={!chunksURL || !chunksURL[0].includes('Face13') || rightPanel === 'annotationForm'}
+                      onClick={() => {
+                        confirmPanelClose(() => {
+                          setRightPanel('annotationForm')
+                          setCurrentAnnotation(null);
+                        });
+                      }}
+                    >
+                      {t('Add Event', {ns: 'electrophysiology_browser'})}
+                    </button>
+                    {
+                      rightPanel === null && (
+                        <button
+                          className={
+                            'btn btn-primary btn-blue'
+                            + (rightPanel ? ' active' : '')
+                          }
+                          onClick={() => {
+                            confirmPanelClose(() => {
+                              setRightPanel(
+                                rightPanel
+                                  ? null
+                                  : 'eventList'
+                              );
+                            })
+                          }}
+                        >
+                          {rightPanel
+                            ? t('Close Panel', {ns: 'electrophysiology_browser'})
+                            : t('Display Events', {ns: 'electrophysiology_browser'})
+                          }
+                        </button>
+                      )
                     }
-                    value={t('Reset', {ns: 'loris'})}
-                  />
-                  <br/>
-                  <input
-                    type='button'
-                    className='btn btn-primary btn-xs btn-zoom'
-                    onClick={zoomIn}
-                    disabled={(interval[1] - interval[0]) <= 0.1}
-                    value='+'
-                  />
-                  <br/>
-                  <input
-                    type='button'
-                    className='btn btn-primary btn-xs btn-zoom'
-                    onClick={zoomOut}
-                    disabled={
-                      interval[0] === domain[0] &&
-                      interval[1] === domain[1]
-                    }
-                    value='-'
-                  />
-                  <br/>
-                  <input
-                    type='button'
-                    className='btn btn-primary btn-xs btn-zoom'
-                    onClick={zoomToSelection}
-                    disabled={!selectionCanBeZoomedTo}
-                    value={t('Fit to Window', {ns: 'electrophysiology_browser'})}
-                  />
+                    <ChannelTypesSelector
+                      channelTypes={channelTypes}
+                      setChannelTypes={setChannelTypes}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-            <IntervalSelect />
-            <div className='row'>
-              <div
-                className='col-xs-offset-1 col-xs-11'
-                style={{zIndex: '1'}}
-              >
+                <IntervalSelect />
                 <div
-                  className='row'
                   style={{
-                    paddingTop: '15px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
                   }}
                 >
                   <div
-                    className={rightPanel ? 'col-lg-12' : 'col-lg-7'}
                     style={{
                       paddingTop: '5px',
                       paddingBottom: '5px',
@@ -1319,7 +1318,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     updateOffsetIndex={updateOffsetIndex}
                     displayedChannelsLimit={numDisplayedChannels}
                     setDisplayedChannelsLimit={handleChannelChange}
-                    rightPanel={rightPanel}
                   />
                 </div>
               </div>

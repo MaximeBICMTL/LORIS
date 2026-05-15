@@ -145,23 +145,14 @@ export function TopographicMapButton({physioFileID, timeSelection, lowPass, high
 
   return (
     <>
-      <div id="topo-controls">
-        <div id="topo-controls-content">
-          Selection: {
-            timeSelection
-              ? `${Math.abs(timeSelection[1] - timeSelection[0]).toFixed(2)}s`
-              : 'n/a'
-          }
-          <button
-            className={'btn btn-primary'}
-            disabled={!timeSelection}
-            style={{width: 'fit-content'}}
-            onClick={() => setShow(!show)}
-          >
-            View Topographic Map
-          </button>
-        </div>
-      </div>
+      <button
+        className={'btn btn-primary'}
+        disabled={!timeSelection}
+        style={{width: 'fit-content'}}
+        onClick={() => setShow(!show)}
+      >
+        View Topographic Map
+      </button>
       {timeSelection && (
         <TopographicMapModal
           physioFileID={physioFileID}
