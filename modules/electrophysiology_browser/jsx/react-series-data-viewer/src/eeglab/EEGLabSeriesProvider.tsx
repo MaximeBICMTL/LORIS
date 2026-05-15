@@ -90,6 +90,23 @@ export const SensorsContext = createContext<Sensor[]>([]);
 export const CoordSystemContext = createContext<CoordinateSystem | null>(null);
 
 /**
+ * State handler for hovered channels.
+ */
+export type HoveredChannelsType = {
+  hoveredChannels: number[],
+  setHoveredChannels: React.Dispatch<React.SetStateAction<number[]>>,
+}
+
+/**
+ * The hovered channels context, which provides the IDs of the channels
+ * currently hovered in the signal visualizer.
+ */
+export const HoveredChannelsContext = createContext<HoveredChannelsType>({
+  hoveredChannels: [],
+  setHoveredChannels: () => {},
+});
+
+/**
  * Function wrapper around the older `EEGLabSeriesProviderClass` class
  * component.
  */
@@ -98,6 +115,7 @@ function EEGLabSeriesProvider(props: CProps) {
   const [channelMetas, setChannelMetas] = useState<ChannelMetadata[]>([]);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [coordSystem, setCoordSystem] = useState<CoordinateSystem | null>(null);
+  const [hoveredChannels, setHoveredChannels] = useState<number[]>([]);
 
   // Fetch the channel BIDS information from the API.
   useEffect(() => {
@@ -184,10 +202,12 @@ function EEGLabSeriesProvider(props: CProps) {
       <ChannelMetasContext.Provider value={channelMetas}>
         <SensorsContext.Provider value={sensors}>
           <CoordSystemContext.Provider value={coordSystem}>
-            <EEGLabSeriesProviderClass
-              {...props}
-              setChannelMetas={setChannelMetas}
-            />
+            <HoveredChannelsContext.Provider value={{hoveredChannels, setHoveredChannels}}>
+              <EEGLabSeriesProviderClass
+                {...props}
+                setChannelMetas={setChannelMetas}
+              />
+            </HoveredChannelsContext.Provider>
           </CoordSystemContext.Provider>
         </SensorsContext.Provider>
       </ChannelMetasContext.Provider>

@@ -69,8 +69,8 @@ export const rootEpic = combineEpics(
     return {epochs};
   }),
   createCursorInteractionEpic(({cursor}) => {
-    const {hoveredChannels} = cursor;
-    return {hoveredChannels};
+    const {hoveredChannels, setHoveredChannels} = cursor;
+    return {hoveredChannels, setHoveredChannels};
   }),
 );
 

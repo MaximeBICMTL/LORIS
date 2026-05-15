@@ -1,11 +1,21 @@
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html, OrbitControls } from '@react-three/drei';
 import { Sensor } from '../series/store/types';
 import { computeCameraSettings, getSensorsBoundingBox, getSensorTypeColor, normalizeSensorPositions } from './utils';
 import * as THREE from 'three';
+import { HoveredChannelsContext } from '../eeglab/EEGLabSeriesProvider';
 
 function Sensor3D({ sensor }: { sensor: Sensor }) {
+  // The hovered channels in the signal visualizer.
+  const {hoveredChannels} = useContext(HoveredChannelsContext);
+
+  const hoveredChannel = (
+    sensor.channelIndex !== undefined
+    && hoveredChannels.includes(sensor.channelIndex)
+  );
+
+  // Whether the sensor is hovered or not.
   const [hovered, setHovered] = useState(false);
   const color = getSensorTypeColor(sensor.type);
 
@@ -19,7 +29,7 @@ function Sensor3D({ sensor }: { sensor: Sensor }) {
         <sphereGeometry args={[0.02, 16, 16]} />
         <meshBasicMaterial color={color} />
       </mesh>
-      {hovered && (
+      {(hovered || hoveredChannel) && (
         <Html
           position={sensor.position}
           center

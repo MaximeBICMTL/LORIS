@@ -4,19 +4,19 @@ import {colorOrder} from '../../color';
 import {Channel, ChannelMetadata, Epoch} from '../store/types';
 import {connect} from 'react-redux';
 import {MAX_RENDERED_EPOCHS} from '../../vector';
-import {MutableRefObject, useEffect} from 'react';
+import {MutableRefObject, useContext, useEffect} from 'react';
 import {RootState} from '../store';
 import {getEpochsInRange} from '../store/logic/filterEpochs';
 import {useTranslation} from "react-i18next";
 import {getChannelUnit, useChannelInfo} from '../store/logic/channels';
 import {normalizeUnit, normalizeValueUnit} from '../../utils';
+import { HoveredChannelsContext } from '../../eeglab/EEGLabSeriesProvider';
 
 type CursorContentProps = {
   time: number,
   channel: Channel,
   contentIndex: number,
   showEvents: boolean,
-  hoveredChannels: number[],
   channelMetadata: ChannelMetadata[],
 };
 
@@ -30,7 +30,6 @@ type CProps = {
   interval: [number, number],
   showEvents: boolean,
   enabled: boolean,
-  hoveredChannels: number[],
   channelMetadata: ChannelMetadata[],
 };
 
@@ -46,7 +45,6 @@ type CProps = {
  * @param root0.interval
  * @param root0.showEvents
  * @param root0.enabled
- * @param root0.hoveredChannels
  * @param root0.channelMetadata
  */
 const SeriesCursor = (
@@ -60,7 +58,6 @@ const SeriesCursor = (
     interval,
     showEvents,
     enabled,
-    hoveredChannels,
     channelMetadata,
   }: CProps
 ) => {
@@ -114,13 +111,14 @@ const SeriesCursor = (
             channel={channel}
             contentIndex={i}
             showEvents={showEvents}
-            hoveredChannels={hoveredChannels}
             channelMetadata={channelMetadata}
           />
         </div>
       ))}
     </div>
   );
+
+  const {hoveredChannels} = useContext(HoveredChannelsContext);
 
   /**
    *
@@ -279,7 +277,6 @@ const computeValue = (chunk, time) => {
  * @param root0.channel
  * @param root0.contentIndex
  * @param root0.showEvents
- * @param root0.hoveredChannels
  * @param root0.channelMetadata
  */
 const CursorContent = (
@@ -288,10 +285,10 @@ const CursorContent = (
     channel,
     contentIndex,
     showEvents,
-    hoveredChannels,
     channelMetadata,
   }: CursorContentProps
 ) => {
+  const {hoveredChannels} = useContext(HoveredChannelsContext);
   const rawUnit = getChannelUnit(useChannelInfo(channel));
   const unit = normalizeUnit(rawUnit);
   return (

@@ -63,13 +63,13 @@ import {
 
 import {
   Channel,
+  Cursor,
   Epoch as EpochType,
   RightPanel, EpochFilter,
   Trace,
 } from '../store/types';
 import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {setCursorInteraction} from '../store/logic/cursorInteraction';
-import {setHoveredChannels} from '../store/state/cursor';
 import {getEpochsInRange, updateActiveEpoch} from '../store/logic/filterEpochs';
 import HEDEndorsement from "./HEDEndorsement";
 import {setTimeSelection} from "../store/state/timeSelection";
@@ -78,7 +78,7 @@ import ChannelTypesSelector from './ChannelTypesSelector';
 import Pagination from './Pagination';
 import {SET_CHANNELS} from '../store/state/channels';
 import {UPDATE_VIEWED_CHUNKS} from '../store/logic/fetchChunks';
-import {ChannelInfosContext, ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
+import {ChannelInfosContext, ChannelMetasContext, HoveredChannelsContext} from '../../eeglab/EEGLabSeriesProvider';
 import {computePercentileRange, computeMean} from '../../utils';
 import MutableKeyDepCache from '../../MutableDepCache';
 
@@ -140,7 +140,6 @@ type CProps = {
   amplitudeScale: number,
   rightPanel: RightPanel,
   timeSelection?: [number, number],
-  setCursor: (number) => void,
   setRightPanel: (_: RightPanel | void) => void,
   chunksURL: string,
   channels: Channel[],
@@ -162,10 +161,9 @@ type CProps = {
   setInterval: (_: [number, number]) => void,
   setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
-  hoveredChannels: number[],
-  setHoveredChannels:  (_: number[]) => void,
   updateActiveEpoch: (_: number) => void,
   setTimeSelection: (_: [number, number]) => void,
+  setCursor: (_: Cursor) => void,
 };
 
 /**
@@ -201,8 +199,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   loadedChannels,
   setCurrentAnnotation,
   physioFileID,
-  hoveredChannels,
-  setHoveredChannels,
   updateActiveEpoch,
   setTimeSelection,
 }) => {
@@ -583,6 +579,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       );
     });
   };
+
+  const {hoveredChannels, setHoveredChannels} = useContext(HoveredChannelsContext);
 
   useEffect(() => {
     hoveredChannels.forEach((channelIndex) => {
@@ -1006,6 +1004,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
    *
    */
   const onChannelHover = (channelIndex : number) => {
+    console.log("SET HOVERED CHANNELS A");
     setHoveredChannels(channelIndex === -1 ? [] : [channelIndex]);
   };
 
@@ -1436,7 +1435,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     channels={channels}
                     interval={interval}
                     enabled={cursorEnabled}
-                    hoveredChannels={hoveredChannels}
                     channelMetadata={channelMetadata}
                     showEvents={rightPanel === 'eventList'}
                   />
@@ -1447,9 +1445,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                       mouseMove={useCallback((cursor: [number, number]) => {
                         setCursor({
                           cursorPosition: [cursor[0], cursor[1]],
-                          viewerRef: viewerRef
+                          viewerRef,
+                          hoveredChannels,
+                          setHoveredChannels,
                         });
-                      }, [])}
+                      }, [hoveredChannels, setHoveredChannels, setCursor])}
                       mouseDown={useCallback((v: Vector2) => {
                         document.addEventListener('mousemove', onMouseMove);
                         document.addEventListener('mouseup', onMouseUp);
@@ -1764,7 +1764,6 @@ export default connect(
     loadedChannels: state.dataset.loadedChannels,
     domain: state.bounds.domain,
     physioFileID: state.dataset.physioFileID,
-    hoveredChannels: state.cursor.hoveredChannels,
   }),
   (dispatch: (_: any) => void) => ({
     setInterval: R.compose(
@@ -1822,10 +1821,6 @@ export default connect(
     dragEnd: R.compose(
       dispatch,
       endDragSelection
-    ),
-    setHoveredChannels: R.compose(
-      dispatch,
-      setHoveredChannels
     ),
     updateActiveEpoch: R.compose(
       dispatch,

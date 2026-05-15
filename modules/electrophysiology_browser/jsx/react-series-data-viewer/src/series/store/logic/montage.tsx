@@ -7,10 +7,10 @@ import {Sensor} from '../types';
  * sensors.
  */
 export function parseElectrodes(text: string): Sensor[] {
-  return tsvParse(text).map(({name, x, y, z}) => ({
+  return tsvParse(text).map(({name, x, y, z}, i) => ({
     type: 'electrode',
     name: name,
-    channelIndex: undefined,
+    channelIndex: i,
     position: [parseFloat(x), parseFloat(y), parseFloat(z)],
   }));
 }
