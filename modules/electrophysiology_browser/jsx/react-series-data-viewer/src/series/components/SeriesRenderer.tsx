@@ -1708,10 +1708,40 @@ function getChannelVisibleRange(channel: Channel, interval: [number, number]): [
 /**
  * Get the values of a trace that fall within the visible interval.
  */
-function getTraceVisibleValues(trace: Trace, interval: [number, number]): number[] {
+function getTraceVisibleValues(trace: Trace, interval: [number, number]): Float32Array {
   const [start, end] = interval;
-  const values = [];
 
+  // First pass: calculate total length needed
+  let totalLength = 0;
+  for (const chunk of trace.chunks) {
+    const [chunkStart, chunkEnd] = chunk.interval;
+
+    if (chunkEnd <= start || chunkStart >= end) {
+      continue;
+    }
+
+    const overlapStart = Math.max(start, chunkStart);
+    const overlapEnd = Math.min(end, chunkEnd);
+
+    const chunkDuration = chunkEnd - chunkStart;
+    const numSamples = chunk.values.length;
+
+    const startIndex = Math.max(0, Math.floor(
+      (overlapStart - chunkStart) / chunkDuration * numSamples
+    ));
+
+    const endIdx = Math.min(numSamples, Math.ceil(
+      (overlapEnd - chunkStart) / chunkDuration * numSamples
+    ));
+
+    totalLength += (endIdx - startIndex);
+  }
+
+  // Create Float32Array of exact size
+  const values = new Float32Array(totalLength);
+  let writeIndex = 0;
+
+  // Second pass: fill the array
   for (const chunk of trace.chunks) {
     const [chunkStart, chunkEnd] = chunk.interval;
 
@@ -1722,7 +1752,7 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): number
 
     // Calculate overlap with view window.
     const overlapStart = Math.max(start, chunkStart);
-    const overlapEnd   = Math.min(end, chunkEnd);
+    const overlapEnd = Math.min(end, chunkEnd);
 
     const chunkDuration = chunkEnd - chunkStart;
     const numSamples = chunk.values.length;
@@ -1736,10 +1766,10 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): number
       (overlapEnd - chunkStart) / chunkDuration * numSamples
     ));
 
-    // Push individual values.
-    for (let i = startIndex; i < endIdx; i++) {
-      values.push(chunk.values[i]);
-    }
+    // Copy values directly into the Float32Array
+    const length = endIdx - startIndex;
+    values.set(chunk.values.subarray(startIndex, endIdx), writeIndex);
+    writeIndex += length;
   }
 
   return values;

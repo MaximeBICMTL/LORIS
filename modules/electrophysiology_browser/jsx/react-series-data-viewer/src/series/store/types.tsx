@@ -2,8 +2,8 @@ import React, {MutableRefObject} from 'react';
 
 export type Chunk = {
   index: number,
-  originalValues: number[],
-  values: number[],
+  originalValues: Float32Array,
+  values: Float32Array,
   filters: string[],
   downsampling: number,
   interval: [number, number],

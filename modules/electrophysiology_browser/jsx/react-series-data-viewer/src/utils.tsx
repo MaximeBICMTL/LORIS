@@ -1,7 +1,7 @@
 /**
  * Get the minimum and maximum values from a non-empty list of numbers.
  */
-export function getMinMaxRange(values: number[]): [number, number] {
+export function getMinMaxRange(values: Float32Array): [number, number] {
   let min = values[0];
   let max = values[0];
   for (let i = 1; i < values.length; i++) {
@@ -20,7 +20,7 @@ export function getMinMaxRange(values: number[]): [number, number] {
  * Get the value at the n-th percentile index in a list.
  */
 export function getIndexPercentile(
-  values: number[],
+  values: Float32Array,
   percentile: number,
 ): number {
   const index = Math.floor((percentile / 100) * values.length);
@@ -32,7 +32,7 @@ export function getIndexPercentile(
  * Compute the percentile range in a list of numbers.
  */
 export function computePercentileRange(
-  values: number[],
+  values: Float32Array,
   lowerPercentile = 5,
   upperPercentile = 95,
 ): [number, number] {
@@ -40,7 +40,7 @@ export function computePercentileRange(
     return [0, 0];
   }
 
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = values.sort((a, b) => a - b);
 
   return [
     getIndexPercentile(sorted, lowerPercentile),
@@ -51,7 +51,7 @@ export function computePercentileRange(
 /**
  * Compute the mean in a list of numbers.
  */
-export function computeMean(values: number[]): number {
+export function computeMean(values: Float32Array): number {
   if (values.length === 0) {
     return 0;
   }
