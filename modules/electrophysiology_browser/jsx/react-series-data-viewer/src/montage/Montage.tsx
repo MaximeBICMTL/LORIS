@@ -433,11 +433,11 @@ function Montage({
   return withPanel ? (
     <div className='col-lg-4 col-md-6'>
       <Panel
-        id='electrode-montage'
+        id='sensor-montage'
         title={
           <>
             {t(
-              'Electrode Map', {
+              'Sensor Map', {
                 ns: 'electrophysiology_browser',
               }
             )}

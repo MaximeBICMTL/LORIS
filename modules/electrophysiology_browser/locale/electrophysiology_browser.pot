@@ -303,7 +303,7 @@ msgstr ""
 msgid "Select All"
 msgstr ""
 
-msgid "Electrode Map"
+msgid "Sensor Map"
 msgstr ""
 
 msgid "Show indices"
@@ -596,7 +596,7 @@ msgstr ""
 msgid "Electrical Stimulation Parameters"
 msgstr ""
 
-msgid "EEG File(s)"
+msgid "Acquisition File"
 msgstr ""
 
 msgid "Electrodes"

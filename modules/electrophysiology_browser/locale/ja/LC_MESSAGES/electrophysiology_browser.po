@@ -305,8 +305,8 @@ msgstr "何も選択しない"
 msgid "Select All"
 msgstr "すべて選択"
 
-msgid "Electrode Map"
-msgstr "電極マップ"
+msgid "Sensor Map"
+msgstr "センサーマップ"
 
 msgid "Show indices"
 msgstr "インデックスを表示"
@@ -598,8 +598,8 @@ msgstr "電気刺激"
 msgid "Electrical Stimulation Parameters"
 msgstr "電気刺激パラメータ"
 
-msgid "EEG File(s)"
-msgstr "脳波計ファイル"
+msgid "Acquisition File"
+msgstr "収録ファイル"
 
 msgid "Electrodes"
 msgstr "電極"
