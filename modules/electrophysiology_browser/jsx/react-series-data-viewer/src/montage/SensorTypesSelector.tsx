@@ -1,18 +1,24 @@
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {SensorType} from '../store/types';
-import MultiSelectDropdownButton from './MultiSelectDropdownButton';
+import {SensorType} from '../series/store/types';
+import MultiSelectDropdownButton
+  from '../series/components/MultiSelectDropdownButton';
 
 type SensorTypeState = {
   visible: boolean;
   sensorsCount: number;
 };
 
+type SensorTypeStateMap = Record<SensorType, SensorTypeState>;
+
 type SensorTypesSelectorProps = {
-  sensorTypes: Record<SensorType, SensorTypeState>;
-  setSensorTypes: React.Dispatch<React.SetStateAction<Record<SensorType, SensorTypeState>>>;
+  sensorTypes: SensorTypeStateMap;
+  setSensorTypes: React.Dispatch<React.SetStateAction<SensorTypeStateMap>>;
 };
 
+/**
+ * A dropdown button that allows to select which sensor types to show or hide.
+ */
 const SensorTypesSelector = ({
   sensorTypes,
   setSensorTypes,
@@ -48,13 +54,18 @@ const SensorTypesSelector = ({
       label={t('Sensor Types')}
       className="btn btn-xs btn-default"
       align="right"
-      options={Object.entries(sensorTypes).map(([sensorType, {visible, sensorsCount}]) => ({
+      options={Object.entries(sensorTypes).map(([
+        sensorType,
+        {visible, sensorsCount},
+      ]) => ({
         value: sensorType,
-        label: `${getSensorTypeName(sensorType as SensorType)} (${sensorsCount})`,
+        label: (
+          `${getSensorTypeName(sensorType as SensorType)} (${sensorsCount})`
+        ),
         selected: visible,
       }))}
       onToggle={(value) => toggleSensorType(value as SensorType)}
-      />
+    />
   );
 };
 

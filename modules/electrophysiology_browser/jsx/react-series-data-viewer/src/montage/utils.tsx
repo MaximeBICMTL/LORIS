@@ -1,6 +1,9 @@
-import { Sensor, SensorType } from "../series/store/types";
-import * as THREE from "three";
+import {Sensor, SensorType} from '../series/store/types';
+import * as THREE from 'three';
 
+/**
+ * Get the display color of a sensor type.
+ */
 export function getSensorTypeColor(sensorType: SensorType): string {
   switch (sensorType) {
   case 'electrode':
@@ -35,7 +38,7 @@ export function normalizeSensorPositions(
       position: [
         ((originalPos.x - center.x) / maxRange) * 2,
         ((originalPos.y - center.y) / maxRange) * 2,
-        ((originalPos.z - center.z) / maxRange) * 2
+        ((originalPos.z - center.z) / maxRange) * 2,
       ],
     };
   });
@@ -44,7 +47,13 @@ export function normalizeSensorPositions(
 /**
  * Compute the camera settings given information about the sensors position.
  */
-export function computeCameraSettings(center: THREE.Vector3, size: THREE.Vector3) {
+export function computeCameraSettings(
+  center: THREE.Vector3,
+  size: THREE.Vector3,
+): {
+  position: [number, number, number],
+  target: [number, number, number],
+} {
   const horizontalSize = Math.max(size.x, size.z);
   const verticalSize = size.y;
   const maxDimension = Math.max(horizontalSize, verticalSize);
@@ -54,8 +63,8 @@ export function computeCameraSettings(center: THREE.Vector3, size: THREE.Vector3
   const finalDistance = distance * 1.5;
 
   return {
-    position: [center.x, center.y + finalDistance, center.z] as [number, number, number],
-    target: [center.x, center.y, center.z] as [number, number, number],
+    position: [center.x, center.y + finalDistance, center.z],
+    target: [center.x, center.y, center.z],
   };
 }
 
@@ -64,9 +73,9 @@ export function computeCameraSettings(center: THREE.Vector3, size: THREE.Vector3
  */
 export function getSensorsBoundingBox(sensors: Sensor[]): THREE.Box3 {
   const box = new THREE.Box3();
-  sensors.forEach(sensor => {
+  for (const sensor of sensors) {
     box.expandByPoint(new THREE.Vector3(...sensor.position));
-  });
+  }
 
   return box;
 }

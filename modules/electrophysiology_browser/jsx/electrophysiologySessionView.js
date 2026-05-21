@@ -21,7 +21,7 @@ import Sidebar from './components/Sidebar';
 import SidebarContent from './components/SidebarContent';
 let EEGLabSeriesProvider;
 let SeriesRenderer;
-let EEGMontage;
+let Montage;
 if (EEG_VIS_ENABLED) {
   EEGLabSeriesProvider = require(
     './react-series-data-viewer/src/eeglab/EEGLabSeriesProvider'
@@ -29,8 +29,8 @@ if (EEG_VIS_ENABLED) {
   SeriesRenderer = require(
     './react-series-data-viewer/src/series/components/SeriesRenderer'
   ).default;
-  EEGMontage = require(
-    './react-series-data-viewer/src/series/components/EEGMontage'
+  Montage = require(
+    './react-series-data-viewer/src/montage/Montage'
   ).default;
 }
 import frStrings from '../locale/fr/LC_MESSAGES/electrophysiology_browser.json';
@@ -509,7 +509,7 @@ class ElectrophysiologySessionView extends Component {
                         t={t}
                       />
                     </div>
-                    <EEGMontage />
+                    <Montage />
                     <div className='col-md-6 col-lg-4'>
                       <DownloadPanel
                         id={'file_download_' + i}

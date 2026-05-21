@@ -1,12 +1,23 @@
-import React, { useContext, useMemo, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Html, OrbitControls } from '@react-three/drei';
-import { Sensor } from '../series/store/types';
-import { computeCameraSettings, getSensorsBoundingBox, getSensorTypeColor, normalizeSensorPositions } from './utils';
+import React, {useContext, useMemo, useState} from 'react';
+import {Canvas} from '@react-three/fiber';
+import {Html, OrbitControls} from '@react-three/drei';
+import {Sensor} from '../series/store/types';
+import {
+  computeCameraSettings,
+  getSensorsBoundingBox,
+  getSensorTypeColor,
+  normalizeSensorPositions,
+} from './utils';
 import * as THREE from 'three';
-import { HoveredChannelsContext } from '../eeglab/EEGLabSeriesProvider';
+import {HoveredChannelsContext} from '../eeglab/EEGLabSeriesProvider';
 
-function Sensor3D({ sensor }: { sensor: Sensor }) {
+/**
+ * A sensor of the 3D montage.
+ */
+function Sensor3D({sensor, handleClick}: {
+  sensor: Sensor,
+  handleClick?: (sensor: Sensor) => void,
+}) {
   // The hovered channels in the signal visualizer.
   const {hoveredChannels} = useContext(HoveredChannelsContext);
 
@@ -23,6 +34,7 @@ function Sensor3D({ sensor }: { sensor: Sensor }) {
     <group>
       <mesh
         position={sensor.position}
+        onClick={() => handleClick?.(sensor)}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
@@ -33,7 +45,7 @@ function Sensor3D({ sensor }: { sensor: Sensor }) {
         <Html
           position={sensor.position}
           center
-          style={{ pointerEvents: 'none' }}
+          style={{pointerEvents: 'none'}}
           distanceFactor={2}
         >
           <div style={{
@@ -45,7 +57,7 @@ function Sensor3D({ sensor }: { sensor: Sensor }) {
             fontFamily: 'sans-serif',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
-            transform: 'translateY(-20px)'
+            transform: 'translateY(-20px)',
           }}>
             {sensor.name}
           </div>
@@ -55,16 +67,20 @@ function Sensor3D({ sensor }: { sensor: Sensor }) {
   );
 }
 
-function Montage3D({ visibleSensors, allSensors }: {
+/**
+ * A canvas displaying sensors of the montage in 3D.
+ */
+function Montage3D({visibleSensors, allSensors, handleSensorClick}: {
   visibleSensors: Sensor[],
   allSensors: Sensor[],
+  handleSensorClick?: (sensor: Sensor) => void,
 }) {
   // Compute the bounding box of all sensors.
   const boundingBox = useMemo(() =>
     getSensorsBoundingBox(allSensors)
   , [allSensors]);
 
-  const { sensors, cameraSettings } = useMemo(() => {
+  const {sensors, cameraSettings} = useMemo(() => {
     // Normalize all sensor positions to range [-1, 1].
     const sensors = normalizeSensorPositions(boundingBox, visibleSensors);
 
@@ -79,16 +95,22 @@ function Montage3D({ visibleSensors, allSensors }: {
   }, [visibleSensors, boundingBox]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{width: '100%', height: '100%'}}>
       <Canvas
         camera={{
           position: cameraSettings.position,
           fov: 30,
-          up: [0, 0, 1] // Set Z as up vector
+          up: [0, 0, 1], // Set Z as up vector
         }}
       >
         {/* <axesHelper args={[5]} /> */}
-        {sensors.map((sensor, idx) => <Sensor3D key={idx} sensor={sensor} />)}
+        {sensors.map((sensor, idx) => (
+          <Sensor3D
+            key={idx}
+            sensor={sensor}
+            handleClick={handleSensorClick}
+          />
+        ))}
         <OrbitControls makeDefault />
       </Canvas>
     </div>

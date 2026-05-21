@@ -45,7 +45,11 @@ export const loadChunks = (chunksData: FetchedChunks[]) => {
       // Concatenate all visible chunks
       const originalChunkValues = chunks.reduce(
         (chunkValues: Float32Array, chunk: Chunk) => {
-          const newArray = new Float32Array(chunkValues.length + chunk.originalValues.length);
+          const newArray = new Float32Array(
+            chunkValues.length
+            + chunk.originalValues.length
+          );
+
           newArray.set(chunkValues);
           newArray.set(chunk.originalValues, chunkValues.length);
           return newArray;

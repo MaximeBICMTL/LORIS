@@ -16,7 +16,7 @@ import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {NumericElement, SelectElement, TextboxElement} from './Form';
 import Panel from './Panel';
 import Modal from 'jsx/Modal';
-import EEGMontage from "./EEGMontage";
+import Montage from "../../montage/Montage";
 import swal from 'sweetalert2';
 import {InfoIcon} from "./components";
 import {colorOrder} from "../../color";
@@ -1199,7 +1199,7 @@ const AnnotationForm = ({
                     onClose={() => { setChannelSelectorVisible(false); }}
                     show={channelSelectorVisible}
                   >
-                    <EEGMontage
+                    <Montage
                       // @ts-ignore
                       withPanel={false}
                       colorMap={{
@@ -1217,7 +1217,6 @@ const AnnotationForm = ({
                       setCancelWarning={setThrowChannelEditWarning}
                       setEventChannels={setEventChannels}
                       eventChannels={eventChannels}
-                      setChannelSelectorVisible={setChannelSelectorVisible}
                     />
                   </Modal>
                 </div>
