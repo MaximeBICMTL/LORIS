@@ -102,9 +102,17 @@ export function findBidsChannel(
   rawChannel: ChannelMetadata,
   bidsChannels: ChannelInfo[]
 ): ChannelInfo | undefined {
-  return bidsChannels.find((bidsChannel) =>
-    bidsChannel.ChannelName === rawChannel.name
-  );
+  return bidsChannels.find((bidsChannel) => {
+    // Escape special regex characters in the raw channel name.
+    const rawRegexName = rawChannel.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // The regex pattern matches exact similarity, as well as number suffixes,
+    // which may or may not be present in MEG CTF datasets.
+    const pattern = new RegExp(`^${rawRegexName}(-\\d+)$`);
+
+    // Test the BIDS channel name against the raw channel name.
+    return pattern.test(bidsChannel.ChannelName);
+  });
 }
 
 /**
