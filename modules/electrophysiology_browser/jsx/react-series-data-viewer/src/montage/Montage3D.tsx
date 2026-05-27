@@ -9,7 +9,12 @@ import {
   normalizeSensorPositions,
 } from './utils';
 import * as THREE from 'three';
-import {HoveredChannelsContext} from '../eeglab/EEGLabSeriesProvider';
+import {
+  ChannelInfosContext,
+  ChannelMetasContext,
+  HoveredChannelsContext,
+} from '../eeglab/EEGLabSeriesProvider';
+import {findBidsChannel} from '../series/store/logic/channels';
 
 /**
  * A sensor of the 3D montage.
@@ -20,6 +25,11 @@ function Sensor3D({sensor, handleClick}: {
 }) {
   // The hovered channels in the signal visualizer.
   const {hoveredChannels} = useContext(HoveredChannelsContext);
+  const rawChannels = useContext(ChannelMetasContext);
+  const bidsChannels = useContext(ChannelInfosContext);
+  const bidsChannel = sensor.channelIndex
+    ? findBidsChannel(rawChannels[sensor.channelIndex], bidsChannels)
+    : undefined;
 
   const hoveredChannel = (
     sensor.channelIndex !== undefined
@@ -28,7 +38,7 @@ function Sensor3D({sensor, handleClick}: {
 
   // Whether the sensor is hovered or not.
   const [hovered, setHovered] = useState(false);
-  const color = getSensorTypeColor(sensor.type);
+  const color = getSensorTypeColor(sensor.type, bidsChannel);
 
   return (
     <group>

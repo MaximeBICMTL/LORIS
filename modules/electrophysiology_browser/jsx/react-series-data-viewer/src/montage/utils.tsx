@@ -1,17 +1,31 @@
-import {Sensor, SensorType} from '../series/store/types';
+import {ChannelInfo, Sensor, SensorType} from '../series/store/types';
 import * as THREE from 'three';
 
 /**
  * Get the display color of a sensor type.
  */
-export function getSensorTypeColor(sensorType: SensorType): string {
+export function getSensorTypeColor(
+  sensorType: SensorType,
+  bidsChannel?: ChannelInfo,
+): string {
   switch (sensorType) {
   case 'electrode':
     return '#B28B00';
   case 'meg-sensor':
-    return '#1A3B66';
+    switch (bidsChannel?.ChannelType) {
+    case 'MEGREFGRADAXIAL':
+      return '#ff7f0e';
+    case 'MEGREFMAG':
+      return '#d62728';
+    case 'HUL':
+      return '#2ca02c';
+    case 'MEGGRADAXIAL':
+      return '#1f77b4';
+    default:
+      return '#222222';
+    }
   case 'head-shape-point':
-    return '#8B2A2A';
+    return '#666666';
   }
 }
 
