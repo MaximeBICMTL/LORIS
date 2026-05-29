@@ -1,18 +1,82 @@
-import {ChannelInfo, Sensor, SensorType} from '../series/store/types';
+import {findBidsChannel} from '../series/store/logic/channels';
+import {
+  ChannelInfo, ChannelMetadata, Sensor, SensorType,
+} from '../series/store/types';
 import * as THREE from 'three';
+
+/**
+ * A sensor category, that is, a pair of sensor type and associated channel
+ * type.
+ */
+export type SensorCategory = {
+  sensorType: SensorType,
+  channelType?: string,
+};
+
+/**
+ * Get a unique string key for a sensor category.
+ */
+export function getSensorCategoryKey(category: SensorCategory): string {
+  return `${category.sensorType}-${category.channelType}`;
+}
+
+/**
+ * Get the BIDS channel associated with a sensor, if there is one.
+ */
+export function getSensorBidsChannel(
+  sensor: Sensor,
+  rawChannels: ChannelMetadata[],
+  bidsChannels: ChannelInfo[],
+): ChannelInfo | undefined {
+  return sensor.channelIndex
+    ? findBidsChannel(rawChannels[sensor.channelIndex], bidsChannels)
+    : undefined;
+}
+
+/**
+ * Get the category of a sensor.
+ */
+export function getSensorCategory(
+  sensor: Sensor,
+  rawChannels: ChannelMetadata[],
+  bidsChannels: ChannelInfo[],
+): SensorCategory {
+  const sensorTypeName = getSensorBidsChannel(
+    sensor,
+    rawChannels,
+    bidsChannels,
+  );
+
+  return {
+    sensorType: sensor.type,
+    channelType: sensorTypeName?.ChannelType,
+  };
+}
+
+/**
+ * Check whether a sensor has a position, and can thus be displayed in the
+ * montage.
+ */
+export function checkSensorPosition(sensor: Sensor): boolean {
+  return (
+    sensor.position[0] !== null &&
+    sensor.position[1] !== null &&
+    sensor.position[2] !== null
+  );
+}
 
 /**
  * Get the display color of a sensor type.
  */
-export function getSensorTypeColor(
+export function getSensorCategoryColor(
   sensorType: SensorType,
-  bidsChannel?: ChannelInfo,
+  bidsChannel?: string,
 ): string {
   switch (sensorType) {
   case 'electrode':
     return '#B28B00';
   case 'meg-sensor':
-    switch (bidsChannel?.ChannelType) {
+    switch (bidsChannel) {
     case 'MEGREFGRADAXIAL':
       return '#ff7f0e';
     case 'MEGREFMAG':

@@ -32,6 +32,7 @@ const ChannelTypesSelector = ({channelTypes, setChannelTypes}: {
       label={t('Channel Types')}
       align="right"
       options={Object.entries(channelTypes).map(([name, {visible, channelsCount}]) => ({
+        key: name,
         value: name,
         label: `${name} (${channelsCount})`,
         selected: visible || false,

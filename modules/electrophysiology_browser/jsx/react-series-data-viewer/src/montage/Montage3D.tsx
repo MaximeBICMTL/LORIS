@@ -5,8 +5,9 @@ import {Sensor} from '../series/store/types';
 import {
   computeCameraSettings,
   getSensorsBoundingBox,
-  getSensorTypeColor,
+  getSensorCategoryColor,
   normalizeSensorPositions,
+  getSensorBidsChannel,
 } from './utils';
 import * as THREE from 'three';
 import {
@@ -27,9 +28,11 @@ function Sensor3D({sensor, handleClick}: {
   const {hoveredChannels} = useContext(HoveredChannelsContext);
   const rawChannels = useContext(ChannelMetasContext);
   const bidsChannels = useContext(ChannelInfosContext);
-  const bidsChannel = sensor.channelIndex
-    ? findBidsChannel(rawChannels[sensor.channelIndex], bidsChannels)
-    : undefined;
+  const bidsChannel = getSensorBidsChannel(
+    sensor,
+    rawChannels,
+    bidsChannels,
+  );
 
   const hoveredChannel = (
     sensor.channelIndex !== undefined
@@ -38,7 +41,7 @@ function Sensor3D({sensor, handleClick}: {
 
   // Whether the sensor is hovered or not.
   const [hovered, setHovered] = useState(false);
-  const color = getSensorTypeColor(sensor.type, bidsChannel);
+  const color = getSensorCategoryColor(sensor.type, bidsChannel?.ChannelType);
 
   return (
     <group>

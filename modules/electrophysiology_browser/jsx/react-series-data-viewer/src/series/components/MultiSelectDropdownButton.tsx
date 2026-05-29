@@ -1,15 +1,16 @@
 import React, {ReactNode} from "react";
 
-type DropdownOption = {
-  value: string;
+type DropdownOption<T> = {
+  key: string,
+  value: T;
   label: ReactNode;
   selected: boolean;
 };
 
-type MultiSelectDropdownButtonProps = {
+type MultiSelectDropdownButtonProps<T> = {
   label: ReactNode;
-  options: DropdownOption[];
-  onToggle: (value: string) => void;
+  options: DropdownOption<T>[];
+  onToggle: (value: T) => void;
   className?: string;
   align?: 'left' | 'right';
 };
@@ -18,22 +19,22 @@ type MultiSelectDropdownButtonProps = {
  * A button component that ungolds a dropdown with a list of checkbox options,
  * allowing users to select multiple items from these options.
  */
-function MultiSelectDropdownButton({
+function MultiSelectDropdownButton<T>({
   label,
   options,
   onToggle,
   className = 'btn btn-primary dropdown',
   align = 'left',
-}: MultiSelectDropdownButtonProps) {
+}: MultiSelectDropdownButtonProps<T>) {
   return (
     <div style={{position: 'relative'}}>
       <button className={className} data-toggle="dropdown">
         {label}
       </button>
       <ul className={`dropdown-menu ${align == 'right' && 'dropdown-menu-right'}`}>
-        {options.map(({value, label, selected}) => (
+        {options.map(({key, value, label, selected}) => (
           <li
-            key={value}
+            key={key}
             style={{
               display: 'flex',
               justifyContent: 'space-between',

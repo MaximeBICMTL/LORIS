@@ -1,20 +1,24 @@
 import React, {
   useState, useEffect, SetStateAction, Dispatch, useContext, useCallback,
+  useMemo,
 } from 'react';
 import {connect} from 'react-redux';
 import {_3d} from 'd3-3d';
 import {Group} from '@visx/group';
 import ResponsiveViewer from '../series/components/ResponsiveViewer';
 import Panel from '../series/components/Panel';
-import SensorTypesSelector from './SensorTypesSelector';
+import SensorCategoriesSelector, { createSensorCategoryMap, SensorCategoryMap } from './SensorCategoriesSelector';
 import {RootState} from '../series/store';
 import {useTranslation} from 'react-i18next';
 import {
+  ChannelInfosContext,
+  ChannelMetasContext,
   CoordSystemContext, SensorsContext,
 } from '../eeglab/EEGLabSeriesProvider';
-import {Sensor, SensorType} from '../series/store/types';
+import {Sensor} from '../series/store/types';
 import Montage3D from './Montage3D';
 import ChannelsEditor from './ChannelsEditor';
+import {checkSensorPosition, getSensorCategory, getSensorCategoryKey} from './utils';
 
 export type ColorMap = {
   color: string,
@@ -55,6 +59,10 @@ function Montage({
   const coordinateSystem = useContext(CoordSystemContext);
   let sensors = useContext(SensorsContext);
 
+  // Remove sensors that do not have a position and therefore cannot be
+  // displayed in the montage.
+  sensors = useMemo(() => sensors.filter(checkSensorPosition), [sensors]);
+
   // if (sensors.length === 0 || coordinateSystem === null) return null;
   const {t} = useTranslation();
   const [view3D, setView3D] = useState(false);
@@ -78,45 +86,27 @@ function Montage({
       .join(channelDelimiter)
   );
 
-  /**
-   * Create the sensor type state map.
-   */
-  const createSensorTypeState = (sensorsList: Sensor[]) => {
-    return sensorsList.reduce((types, sensor) => {
-      const type = sensor.type;
-      if (types[type] === undefined) {
-        types[type] = {visible: true, sensorsCount: 0};
-      }
-      types[type].sensorsCount += 1;
-      return types;
-    }, {} as Record<SensorType, {visible: boolean; sensorsCount: number}>);
-  };
+  const rawChannels = useContext(ChannelMetasContext);
+  const bidsChannels = useContext(ChannelInfosContext);
 
-  const [sensorTypes, setSensorTypes] = useState<Record<SensorType, {
-    visible: boolean;
-    sensorsCount: number;
-  }>>(
-    () => createSensorTypeState(sensors)
+  const [sensorCategories, setSensorCategories] = useState<SensorCategoryMap>(
+    {}
   );
 
-  const isSensorTypeVisible = useCallback((sensorType: SensorType) => {
-    return sensorTypes[sensorType]?.visible ?? true;
-  }, [sensorTypes]);
+  const isSensorVisible = useCallback((sensor: Sensor) => {
+    const sensorCategory = getSensorCategory(
+      sensor,
+      rawChannels,
+      bidsChannels,
+    );
+
+    const sensorCategoryKey = getSensorCategoryKey(sensorCategory);
+
+    return sensorCategories[sensorCategoryKey]?.visible ?? true;
+  }, [rawChannels, bidsChannels, sensorCategories]);
 
   useEffect(() => {
-    setSensorTypes((current) => {
-      return sensors.reduce((types, sensor) => {
-        const type = sensor.type;
-        if (types[type] === undefined) {
-          types[type] = {
-            visible: current[type]?.visible ?? true,
-            sensorsCount: 0,
-          };
-        }
-        types[type].sensorsCount += 1;
-        return types;
-      }, {} as Record<SensorType, {visible: boolean; sensorsCount: number}>);
-    });
+    setSensorCategories(createSensorCategoryMap(sensors, rawChannels, bidsChannels));
   }, [sensors]);
 
   const scatter2D = [];
@@ -291,7 +281,7 @@ function Montage({
         fill='white'
       />
       {scatter2D.map((point, i) => {
-        if (!isSensorTypeVisible(sensors[i].type)) {
+        if (!isSensorVisible(sensors[i])) {
           return null;
         }
 
@@ -347,9 +337,7 @@ function Montage({
     </Group>
   );
 
-  const visibleSensors = sensors.filter(
-    (sensor) => isSensorTypeVisible(sensor.type)
-  );
+  const visibleSensors = sensors.filter(isSensorVisible);
 
   const panelContent = <div
     className="row"
@@ -401,9 +389,9 @@ function Montage({
               onClick={() => setView3D(true)}
             >3D</button>
           </div>
-          <SensorTypesSelector
-            sensorTypes={sensorTypes}
-            setSensorTypes={setSensorTypes}
+          <SensorCategoriesSelector
+            categories={sensorCategories}
+            setCategories={setSensorCategories}
           />
         </div>
       </div>
