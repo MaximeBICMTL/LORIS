@@ -108,7 +108,7 @@ export function findBidsChannel(
 
     // The regex pattern matches exact similarity, as well as number suffixes,
     // which may or may not be present in MEG CTF datasets.
-    const pattern = new RegExp(`^${rawRegexName}(-\\d+)$`);
+    const pattern = new RegExp(`^${rawRegexName}(-\\d+)?$`);
 
     // Test the BIDS channel name against the raw channel name.
     return pattern.test(bidsChannel.ChannelName);
