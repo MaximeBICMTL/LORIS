@@ -13,8 +13,8 @@ export function TopographicMap({physioFileID, tMin, tMax, lowPass, highPass}: {
   physioFileID: number,
   tMin: number,
   tMax: number,
-  lowPass: number | null,
-  highPass: number | null,
+  lowPass?: number,
+  highPass?: number,
 }) {
   const [state, setState] = useState<TopographicMapState>({ status: 'loading' });
 
@@ -24,11 +24,11 @@ export function TopographicMap({physioFileID, tMin, tMax, lowPass, highPass}: {
     const fetchTopoData = async (physioFileID: number, tMin: number, tMax: number) => {
       try {
         let url = `/ephys/${physioFileID}/topographic-map?tmin=${tMin}&tmax=${tMax}`;
-        if (lowPass !== null) {
+        if (lowPass !== undefined) {
           url += `&lfreq=${lowPass}`;
         }
 
-        if (highPass !== null) {
+        if (highPass !== undefined) {
           url += `&hfreq=${highPass}`;
         }
 
@@ -106,8 +106,8 @@ export function TopographicMap({physioFileID, tMin, tMax, lowPass, highPass}: {
 export function TopographicMapModal({physioFileID, timeSelection, lowPass, highPass, show, setShow}: {
   physioFileID: number,
   timeSelection: [number, number],
-  lowPass: number | null,
-  highPass: number | null,
+  lowPass?: number,
+  highPass?: number,
   show: boolean,
   setShow: (show: boolean) => void,
 }) {
@@ -137,9 +137,9 @@ export function TopographicMapModal({physioFileID, timeSelection, lowPass, highP
  */
 export function TopographicMapButton({physioFileID, timeSelection, lowPass, highPass}: {
   physioFileID: number,
-  timeSelection: [number, number] | null,
-  lowPass: number | null,
-  highPass: number | null,
+  timeSelection?: [number, number],
+  lowPass?: number,
+  highPass?: number,
 }) {
   const [show, setShow] = useState(false);
 

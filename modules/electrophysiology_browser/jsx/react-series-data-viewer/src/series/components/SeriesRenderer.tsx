@@ -1131,12 +1131,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     justifyContent: 'space-between',
                   }}
                 >
-                  {/* TODO: Use time selection instead of interval */}
                   <TopographicMapButton
                     physioFileID={physioFileID}
-                    timeSelection={interval}
-                    lowPass={lowPass !== 'none' ? LOW_PASS_FILTERS[lowPass].frequency : null}
-                    highPass={highPass !== 'none' ? HIGH_PASS_FILTERS[highPass].frequency : null}
+                    timeSelection={timeSelection}
+                    lowPass={lowPass !== 'none' ? LOW_PASS_FILTERS[lowPass].frequency : undefined}
+                    highPass={highPass !== 'none' ? HIGH_PASS_FILTERS[highPass].frequency : undefined}
                   />
                   <div id="right-panel-controls">
                     <button
