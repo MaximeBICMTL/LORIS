@@ -17,6 +17,7 @@ import Panel from 'jsx/Panel';
 import {FilePanel} from './components/electrophysiology_session_panels';
 import {SummaryPanel} from './components/electrophysiology_session_summary';
 import {DownloadPanel} from './components/DownloadPanel';
+import MEEGqcFilesPanel from './meegqc/MEEGqcFilesPanel';
 import Sidebar from './components/Sidebar';
 import SidebarContent from './components/SidebarContent';
 let EEGLabSeriesProvider;
@@ -510,6 +511,13 @@ class ElectrophysiologySessionView extends Component {
                       />
                     </div>
                     <Montage />
+                    <div className='col-md-6 col-lg-4'>
+                      <MEEGqcFilesPanel
+                        id={'meegqc_files_' + i}
+                        physioFileID={this.state.database[i].file.id}
+                        t={t}
+                      />
+                    </div>
                     <div className='col-md-6 col-lg-4'>
                       <DownloadPanel
                         id={'file_download_' + i}
