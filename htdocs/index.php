@@ -181,6 +181,9 @@ if (strpos($request_uri, '/ephys/') === 0) {
 
     // Pass through the request method
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
+    if ($_SERVER['REQUEST_METHOD'] === 'HEAD') {
+        curl_setopt($ch, CURLOPT_NOBODY, true);
+    }
 
     // Pass through request headers
     $headers = ['Authorization: Bearer ' . $token];
@@ -201,9 +204,24 @@ if (strpos($request_uri, '/ephys/') === 0) {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     }
 
-    // Pass through POST data
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
+    // Stream request bodies to the upstream server instead of loading them
+    // into memory.
+    $requestBody = null;
+    if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH'], true)) {
+        $requestBody   = fopen('php://input', 'rb');
+        $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+
+        if ($contentLength > 0) {
+            curl_setopt($ch, CURLOPT_UPLOAD, true);
+            curl_setopt($ch, CURLOPT_INFILESIZE, $contentLength);
+            curl_setopt(
+                $ch,
+                CURLOPT_READFUNCTION,
+                function ($ch, $fd, $length) use ($requestBody) {
+                    return fread($requestBody, $length);
+                }
+            );
+        }
     }
 
     // Disable output buffering so large proxied responses stream through PHP.
@@ -224,6 +242,10 @@ if (strpos($request_uri, '/ephys/') === 0) {
 
     // Close cURL
     curl_close($ch);
+
+    if (is_resource($requestBody)) {
+        fclose($requestBody);
+    }
     exit;
 }
 
