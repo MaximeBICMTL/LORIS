@@ -106,11 +106,76 @@ if (strpos($request_uri, '/ephys/') === 0) {
     // Initialize cURL
     $ch = curl_init();
 
+    $responseStatusLine = null;
+    $responseHeaders    = [];
+    $headersForwarded   = false;
+
+    $forwardResponseHeaders = function () use (
+        &$responseStatusLine,
+        &$responseHeaders,
+        &$headersForwarded
+    ) {
+        if ($headersForwarded === true) {
+            return;
+        }
+
+        if ($responseStatusLine !== null) {
+            header($responseStatusLine);
+        }
+
+        foreach ($responseHeaders as $header) {
+            header($header, false);
+        }
+
+        $headersForwarded = true;
+    };
+
     // Set cURL options
     curl_setopt($ch, CURLOPT_URL, $target_url);
-    curl_setopt($ch, CURLOPT_HEADER, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt(
+        $ch,
+        CURLOPT_HEADERFUNCTION,
+        function ($ch, $header) use (&$responseStatusLine, &$responseHeaders) {
+            $headerLength = strlen($header);
+            $header = trim($header);
+
+            if ($header === '') {
+                return $headerLength;
+            }
+
+            if (preg_match('/^HTTP\/\d(?:\.\d)?\s+\d+/', $header) === 1) {
+                $responseStatusLine = $header;
+                $responseHeaders    = [];
+                return $headerLength;
+            }
+
+            $isHopByHopHeader = preg_match(
+                '/^(?:Transfer-Encoding|Connection|Keep-Alive|'
+                . 'Proxy-Authenticate|Proxy-Authorization|Trailer|Upgrade):/i',
+                $header
+            ) === 1;
+
+            if ($isHopByHopHeader === false) {
+                $responseHeaders[] = $header;
+            }
+
+            return $headerLength;
+        }
+    );
+    curl_setopt(
+        $ch,
+        CURLOPT_WRITEFUNCTION,
+        function ($ch, $chunk) use ($forwardResponseHeaders) {
+            $forwardResponseHeaders();
+            echo $chunk;
+            flush();
+
+            return strlen($chunk);
+        }
+    );
 
     curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 0 = no timeout
 
@@ -141,28 +206,24 @@ if (strpos($request_uri, '/ephys/') === 0) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
     }
 
-    // Execute cURL request
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    // Disable output buffering so large proxied responses stream through PHP.
+    for ($i = ob_get_level(); $i != 0; $i = ob_get_level()) {
+        ob_end_clean();
+    }
+    ob_implicit_flush();
 
-    // Get response headers and body
-    $response_headers = substr($response, 0, $header_size);
-    $response_body = substr($response, $header_size);
+    // Execute cURL request
+    $success = curl_exec($ch);
+
+    if ($success === false) {
+        http_response_code(502);
+        echo 'Failed to proxy request to internal service.';
+    } else {
+        $forwardResponseHeaders();
+    }
 
     // Close cURL
     curl_close($ch);
-
-    // Forward response headers
-    $headers_list = explode("\r\n", $response_headers);
-    foreach ($headers_list as $header) {
-        if (!empty($header) && !preg_match('/Transfer-Encoding/i', $header)) {
-            header($header);
-        }
-    }
-
-    // Output response body
-    echo $response_body;
     exit;
 }
 
