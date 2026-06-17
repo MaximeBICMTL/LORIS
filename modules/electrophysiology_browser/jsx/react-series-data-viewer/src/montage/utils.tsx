@@ -138,12 +138,28 @@ export function computeCameraSettings(
 
   const fovRadians = (50 * Math.PI) / 180;
   const distance = (maxDimension / 2) / Math.tan(fovRadians / 2);
-  const finalDistance = distance * 1.5;
+  const finalDistance = distance * 2;
 
   return {
     position: [center.x, center.y + finalDistance, center.z],
     target: [center.x, center.y, center.z],
   };
+}
+
+/**
+ * Compute the centroid of sensor positions.
+ */
+export function getSensorsCentroid(sensors: Sensor[]): THREE.Vector3 {
+  if (sensors.length === 0) {
+    return new THREE.Vector3(0, 0, 0);
+  }
+
+  const centroid = sensors.reduce(
+    (sum, sensor) => sum.add(new THREE.Vector3(...sensor.position)),
+    new THREE.Vector3(0, 0, 0),
+  );
+
+  return centroid.divideScalar(sensors.length);
 }
 
 /**

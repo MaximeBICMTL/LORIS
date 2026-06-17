@@ -4,6 +4,7 @@ import {Html, OrbitControls} from '@react-three/drei';
 import {Sensor} from '../series/store/types';
 import {
   computeCameraSettings,
+  getSensorsCentroid,
   getSensorsBoundingBox,
   getSensorCategoryColor,
   normalizeSensorPositions,
@@ -93,19 +94,24 @@ function Montage3D({visibleSensors, allSensors, handleSensorClick}: {
     getSensorsBoundingBox(allSensors)
   , [allSensors]);
 
-  const {sensors, cameraSettings} = useMemo(() => {
-    // Normalize all sensor positions to range [-1, 1].
-    const sensors = normalizeSensorPositions(boundingBox, visibleSensors);
+  // Normalize visible sensor positions to range [-1, 1].
+  const sensors = useMemo(() =>
+    normalizeSensorPositions(boundingBox, visibleSensors)
+  , [boundingBox, visibleSensors]);
 
-    // With [-1, 1] range, center is at origin and size is 2 in each dimension.
-    const normalizedCenter = new THREE.Vector3(0, 0, 0);
+  const normalizedCenter = useMemo(() => {
+    const allNormalizedSensors = normalizeSensorPositions(
+      boundingBox,
+      allSensors,
+    );
+
+    return getSensorsCentroid(allNormalizedSensors);
+  }, [allSensors, boundingBox]);
+
+  const cameraSettings = useMemo(() => {
     const normalizedSize = new THREE.Vector3(2, 2, 2);
-
-    return {
-      sensors,
-      cameraSettings: computeCameraSettings(normalizedCenter, normalizedSize),
-    };
-  }, [visibleSensors, boundingBox]);
+    return computeCameraSettings(normalizedCenter, normalizedSize);
+  }, [normalizedCenter]);
 
   return (
     <div style={{width: '100%', height: '100%'}}>
@@ -124,7 +130,7 @@ function Montage3D({visibleSensors, allSensors, handleSensorClick}: {
             handleClick={handleSensorClick}
           />
         ))}
-        <OrbitControls makeDefault />
+        <OrbitControls makeDefault target={cameraSettings.target} />
       </Canvas>
     </div>
   );
