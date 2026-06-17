@@ -1,7 +1,8 @@
 import {useCallback} from "react";
 import {useTranslation} from "react-i18next";
 import {ChannelTypeState} from "./SeriesRenderer";
-import MultiSelectDropdownButton from "./MultiSelectDropdownButton";
+import MultiSelectDropdownButton
+  from "../../../../common/MultiSelectDropdownButton";
 
 /**
  * Component that displays the list of channel types present in the acquisition and

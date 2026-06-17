@@ -1,5 +1,8 @@
-import React, {ReactNode} from "react";
+import React, {ReactNode} from 'react';
 
+/**
+ * Store one value displayed in the multi-select dropdown.
+ */
 type DropdownOption<T> = {
   key: string,
   value: T;
@@ -7,6 +10,9 @@ type DropdownOption<T> = {
   selected: boolean;
 };
 
+/**
+ * Configure the multi-select dropdown button.
+ */
 type MultiSelectDropdownButtonProps<T> = {
   label: ReactNode;
   options: DropdownOption<T>[];
@@ -16,8 +22,8 @@ type MultiSelectDropdownButtonProps<T> = {
 };
 
 /**
- * A button component that ungolds a dropdown with a list of checkbox options,
- * allowing users to select multiple items from these options.
+ * Component for a dropdown button with checkbox options.
+ * Toggle multiple values without closing the menu.
  */
 function MultiSelectDropdownButton<T>({
   label,
@@ -31,7 +37,9 @@ function MultiSelectDropdownButton<T>({
       <button className={className} data-toggle="dropdown">
         {label}
       </button>
-      <ul className={`dropdown-menu ${align == 'right' && 'dropdown-menu-right'}`}>
+      <ul
+        className={`dropdown-menu ${align == 'right' && 'dropdown-menu-right'}`}
+      >
         {options.map(({key, value, label, selected}) => (
           <li
             key={key}

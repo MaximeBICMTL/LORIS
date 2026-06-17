@@ -1,175 +1,35 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useState} from 'react';
+import type {TFunction} from 'i18next';
 import Modal from 'jsx/Modal';
+import {
+  PlainTextViewer,
+  HTMLIframeViewer,
+  TSVViewer,
+} from '../common/FileViewers';
 
-type TranslationFunction = (
-  key: string,
-  options?: Record<string, unknown>
-) => string;
+type FilePreviewType = 'html' | 'text' | 'tsv';
 
-type FileViewMode = 'html' | 'text' | 'tsv';
+/**
+ * Store the loaded content needed by the selected MEEGqc file viewer.
+ */
+type FilePreviewData =
+  | {type: 'html'; url: string}
+  | {type: 'text' | 'tsv'; content: string};
 
-type FileViewerState =
+/**
+ * Track the loading lifecycle for a MEEGqc file preview request.
+ */
+type FilePreviewState =
   | {status: 'idle'}
   | {status: 'loading'}
-  | {status: 'success'; content: string; mode: 'text' | 'tsv'}
-  | {status: 'success'; objectURL: string; mode: 'html'}
+  | {status: 'success'; preview?: FilePreviewData}
   | {status: 'error'; message: string};
 
 const ns = {ns: 'electrophysiology_browser'};
 
-function getFileExtension(fileName: string): string {
-  const extension = fileName.split('.').pop();
-  return extension?.toLowerCase() ?? '';
-}
-
-function getFileViewMode(fileName: string): FileViewMode {
-  switch (getFileExtension(fileName)) {
-  case 'html':
-  case 'htm':
-    return 'html';
-  case 'tsv':
-    return 'tsv';
-  default:
-    return 'text';
-  }
-}
-
-function parseTSV(content: string): string[][] {
-  return content
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .filter((row) => row.length > 0)
-    .map((row) => row.split('\t'));
-}
-
-function MEEGqcTSVViewer({content}: {content: string}) {
-  const rows = useMemo(() => parseTSV(content), [content]);
-
-  if (rows.length === 0) {
-    return <div className='text-muted'>No rows to display.</div>;
-  }
-
-  const [header, ...bodyRows] = rows;
-
-  return (
-    <div style={{overflowX: 'auto'}}>
-      <table
-        style={{
-          borderCollapse: 'collapse',
-          fontFamily: 'Arial, Helvetica, sans-serif',
-          fontSize: '14px',
-          width: '100%',
-        }}
-      >
-        <thead>
-          <tr>
-            {header.map((cell, cellIndex) => (
-              <th
-                key={cellIndex}
-                style={{
-                  borderBottom: '2px solid #ddd',
-                  padding: '4px 6px',
-                  textAlign: 'left',
-                }}
-              >
-                {cell}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {bodyRows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {header.map((_cell, cellIndex) => (
-                <td
-                  key={cellIndex}
-                  style={{
-                    borderTop: '1px solid #ddd',
-                    padding: '4px 6px',
-                    textAlign: 'left',
-                  }}
-                >
-                  {row[cellIndex] ?? ''}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function MEEGqcHTMLViewer({objectURL}: {objectURL: string}) {
-  return (
-    <iframe
-      sandbox='allow-scripts'
-      src={objectURL}
-      style={{
-        border: '1px solid #ddd',
-        height: '70vh',
-        width: '100%',
-      }}
-      title='MEEGqc HTML file preview'
-    />
-  );
-}
-
-function MEEGqcTextViewer({content}: {content: string}) {
-  return (
-    <pre
-      style={{
-        background: 'transparent',
-        border: 0,
-        margin: 0,
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        textAlign: 'left',
-      }}
-    >
-      {content}
-    </pre>
-  );
-}
-
-function MEEGqcFileViewerContent({
-  state,
-  t,
-}: {
-  state: FileViewerState;
-  t: TranslationFunction;
-}) {
-  switch (state.status) {
-  case 'idle':
-  case 'loading':
-    return (
-      <>
-        {t('Loading...', {ns: 'loris'})}
-        <span className='glyphicon glyphicon-refresh glyphicon-refresh-animate'>
-        </span>
-      </>
-    );
-  case 'error':
-    return (
-      <div className='alert alert-danger'>
-        {t('Unable to load MEEGqc file.', ns)}
-        <br/>
-        {state.message}
-      </div>
-    );
-  case 'success':
-    switch (state.mode) {
-    case 'html':
-      return <MEEGqcHTMLViewer objectURL={state.objectURL}/>;
-    case 'tsv':
-      return <MEEGqcTSVViewer content={state.content}/>;
-    case 'text':
-      return <MEEGqcTextViewer content={state.content}/>;
-    }
-  }
-}
-
+/**
+ * Component for previewing a MEEGqc file in a modal dialog.
+ */
 function MEEGqcFileViewerModal({
   fileName,
   fileURL,
@@ -181,14 +41,18 @@ function MEEGqcFileViewerModal({
   fileURL: string;
   show: boolean;
   onClose: () => void;
-  t: TranslationFunction;
+  t: TFunction;
 }) {
-  const [state, setState] = useState<FileViewerState>({status: 'idle'});
+  const [state, setState] = useState<FilePreviewState>({status: 'idle'});
+  const loadingLabel = t('Loading...', {ns: 'loris'});
+  const unknownErrorMessage = t('Unknown file fetch error', ns);
 
   useEffect(() => {
     let ignoreResponse = false;
-    let objectURL: string | null = null;
 
+    /**
+     * Fetch the file content from the MEEGqc LORIS API.
+     */
     const fetchFileContent = async () => {
       if (!show) {
         setState({status: 'idle'});
@@ -198,6 +62,30 @@ function MEEGqcFileViewerModal({
       setState({status: 'loading'});
 
       try {
+        const viewType = getFilePreviewType(fileName);
+
+        if (!viewType) {
+          if (!ignoreResponse) {
+            setState({status: 'success', preview: undefined});
+          }
+
+          return;
+        }
+
+        if (viewType === 'html') {
+          if (!ignoreResponse) {
+            setState({
+              status: 'success',
+              preview: {
+                url: fileURL,
+                type: viewType,
+              },
+            });
+          }
+
+          return;
+        }
+
         const response = await fetch(
           fileURL,
           {credentials: 'same-origin'}
@@ -207,32 +95,15 @@ function MEEGqcFileViewerModal({
           throw new Error(response.statusText);
         }
 
-        const mode = getFileViewMode(fileName);
-
-        if (mode === 'html') {
-          const blob = await response.blob();
-          objectURL = URL.createObjectURL(
-            new Blob([blob], {type: 'text/html'})
-          );
-
-          if (!ignoreResponse) {
-            setState({
-              status: 'success',
-              objectURL,
-              mode,
-            });
-          }
-
-          return;
-        }
-
         const content = await response.text();
 
         if (!ignoreResponse) {
           setState({
             status: 'success',
-            content,
-            mode,
+            preview: {
+              content,
+              type: viewType,
+            },
           });
         }
       } catch (fetchError: unknown) {
@@ -241,7 +112,7 @@ function MEEGqcFileViewerModal({
             status: 'error',
             message: fetchError instanceof Error
               ? fetchError.message
-              : 'Unknown MEEGqc file fetch error',
+              : unknownErrorMessage,
           });
         }
       }
@@ -251,18 +122,15 @@ function MEEGqcFileViewerModal({
 
     return () => {
       ignoreResponse = true;
-      if (objectURL !== null) {
-        URL.revokeObjectURL(objectURL);
-      }
     };
-  }, [fileName, fileURL, show]);
+  }, [fileName, fileURL, show, unknownErrorMessage]);
 
   return (
     <Modal
       show={show}
       title={fileName}
       onClose={onClose}
-      width='90vw'
+      width='95vw'
     >
       <div
         style={{
@@ -272,10 +140,95 @@ function MEEGqcFileViewerModal({
           textAlign: 'left',
         }}
       >
-        <MEEGqcFileViewerContent state={state} t={t}/>
+        <MEEGqcFileViewerContent
+          loadingLabel={loadingLabel}
+          state={state}
+          t={t}
+        />
       </div>
     </Modal>
   );
+}
+
+/**
+ * Component for the body of the MEEGqc file preview modal.
+ */
+function MEEGqcFileViewerContent({
+  state,
+  loadingLabel,
+  t,
+}: {
+  state: FilePreviewState;
+  loadingLabel: ReactNode;
+  t: TFunction;
+}) {
+  switch (state.status) {
+  case 'idle':
+  case 'loading':
+    return (
+      <>
+        {loadingLabel}
+        <span className='glyphicon glyphicon-refresh glyphicon-refresh-animate'>
+        </span>
+      </>
+    );
+  case 'error':
+    return (
+      <div className='alert alert-danger'>
+        {t('Unable to load file.', ns)}
+        <br/>
+        {state.message}
+      </div>
+    );
+  case 'success':
+    if (!state.preview) {
+      return (
+        <div style={{color: '#777'}}>
+          {t('File preview is not supported for this file type.', ns)}
+        </div>
+      );
+    }
+
+    switch (state.preview.type) {
+    case 'html':
+      return (
+        <HTMLIframeViewer
+          sandbox='allow-scripts'
+          url={state.preview.url}
+          title={t('MEEGqc HTML file preview', ns)}
+        />
+      );
+    case 'tsv':
+      return <TSVViewer content={state.preview.content}/>;
+    case 'text':
+      return <PlainTextViewer content={state.preview.content}/>;
+    }
+  }
+}
+
+/**
+ * Choose the preview type for supported MEEGqc file extensions.
+ */
+function getFilePreviewType(fileName: string): FilePreviewType | null {
+  switch (getFileExtension(fileName)) {
+  case 'html':
+    return 'html';
+  case 'tsv':
+    return 'tsv';
+  case 'json':
+  case 'txt':
+    return 'text';
+  }
+
+  return null;
+}
+
+/**
+ * Return the lower-case extension from a filename.
+ */
+function getFileExtension(fileName: string): string {
+  const extension = fileName.split('.').pop();
+  return extension?.toLowerCase() ?? '';
 }
 
 export default MEEGqcFileViewerModal;

@@ -4,7 +4,7 @@ import {
   ChannelInfo, ChannelMetadata, Sensor, SensorType,
 } from '../series/store/types';
 import MultiSelectDropdownButton
-  from '../series/components/MultiSelectDropdownButton';
+  from '../../../common/MultiSelectDropdownButton';
 import {
   getSensorCategoryKey,
   getSensorCategoryColor,
