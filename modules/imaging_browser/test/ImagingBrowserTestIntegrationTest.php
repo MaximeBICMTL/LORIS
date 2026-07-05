@@ -169,7 +169,6 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
                 'ProtocolFile'      => 'None1',
                 'FileType'          => null,
                 'Tool'              => 'None1',
-                'InsertTime'        => 0,
                 'md5sum'            => null,
             ]
         );
@@ -181,7 +180,6 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
                 'ProtocolFile'      => 'None2',
                 'FileType'          => null,
                 'Tool'              => 'None2',
-                'InsertTime'        => 0,
                 'md5sum'            => null,
             ]
         );
@@ -255,7 +253,7 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
              'MriScanTypeID'     => 45,
              'FileType'          => 'mnc',
              'InsertedByUserID'  => 'lorisadmin',
-             'InsertTime'        => 1454951768,
+             'InsertTime'        => '2016-02-08 18:36:08',
              'SourcePipeline'    => null,
              'PipelineDate'      => null,
              'SourceFileID'      => 1111,
@@ -282,7 +280,7 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
              'MriScanTypeID'     => 44,
              'FileType'          => 'mnc',
              'InsertedByUserID'  => 'lorisadmin',
-             'InsertTime'        => 1454951768,
+             'InsertTime'        => '2016-02-08 18:36:08',
              'SourcePipeline'    => null,
              'PipelineDate'      => null,
              'SourceFileID'      => 2222,

@@ -2166,7 +2166,7 @@ INSERT INTO parameter_type_category_rel (ParameterTypeID,ParameterTypeCategoryID
 LOCK TABLES `parameter_candidate` WRITE;
 DELETE FROM `parameter_candidate`;
 /*!40000 ALTER TABLE `parameter_candidate` DISABLE KEYS */;
-INSERT INTO `parameter_candidate` (ParameterCandidateID,CandID,ParameterTypeID,Value,InsertTime) VALUES (1,587630,2,'comment',1472831173),(2,587630,3,'plan1',1472831173),(3,300005,3,'as',1475874024),(4,300005,4,'plan2',1475874024);
+INSERT INTO `parameter_candidate` (ParameterCandidateID,CandID,ParameterTypeID,Value,InsertTime) VALUES (1,587630,2,'comment','2016-09-02 15:46:13'),(2,587630,3,'plan1','2016-09-02 15:46:13'),(3,300005,3,'as','2016-10-07 21:00:24'),(4,300005,4,'plan2','2016-10-07 21:00:24');
 /*!40000 ALTER TABLE `parameter_candidate` ENABLE KEYS */;
 UNLOCK TABLES;
 

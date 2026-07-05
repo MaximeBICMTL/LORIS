@@ -38,7 +38,7 @@ class QueryEngine extends \LORIS\Data\Query\SQLQueryEngine
         ],
         'FileInsertDate'  => [
             'DateType',
-            'FROM_UNIXTIME(InsertTime,"%Y-%m-%d")',
+            'DATE_FORMAT(InsertTime,"%Y-%m-%d")',
             'acquisition file insert date'
         ],
         'Caveat'          => [

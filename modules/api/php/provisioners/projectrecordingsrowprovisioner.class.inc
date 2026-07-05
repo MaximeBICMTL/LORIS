@@ -44,11 +44,6 @@ class ProjectRecordingsRowProvisioner extends DBRowProvisioner
         \Project $project,
         \DateTime $since
     ) {
-        // NOTE: we use string concatenation instead of a bind parameter for
-        // the $since parameter. PDOStatement->bindValues converts the parameter to
-        // a string. Timestamp > '0' is either a warning or exception depending
-        // on SQL configuration, (Timestamp > 0 is correct). The string concatenation
-        // ensures that it remains an int.
         parent::__construct(
             $this->loris,
             '
@@ -62,7 +57,7 @@ class ProjectRecordingsRowProvisioner extends DBRowProvisioner
                p.Name as Site,
                f.FilePath as File,
                pm.PhysiologicalModality as Modality,
-               f.InsertTime as InsertTime
+               UNIX_TIMESTAMP(f.InsertTime) as InsertTime
              FROM
                physiological_file f
              LEFT JOIN session s
@@ -79,11 +74,12 @@ class ProjectRecordingsRowProvisioner extends DBRowProvisioner
                c.Active = \'Y\' AND
                s.Active = \'Y\' AND
                project.Name = :v_projectname AND
-               f.InsertTime > ' . intval($since->getTimestamp()) . '
+               f.InsertTime > FROM_UNIXTIME(:v_time)
              ORDER BY f.InsertTime ASC
             ',
             [
                 'v_projectname' => $project->getName(),
+                'v_time'        => $since->getTimestamp(),
             ]
         );
     }

@@ -234,10 +234,10 @@ class CouchDBMRIImporter
             $FileObj,
             'acquisition_date'
         );
-        $header['FileInsertDate_'.$type]      = date(
-            'Y-m-d',
-            intval($FileObj->getParameter('InsertTime'))
-        );
+        $fileInsertTime = (string)$FileObj->getParameter('InsertTime');
+        // Extract the YYYY-MM-DD prefix date part of the insert time.
+        $fileInsertDate = substr($fileInsertTime, 0, 10);
+        $header['FileInsertDate_'.$type]      = $fileInsertDate;
         $header['SeriesDescription_'.$type]   = $FileObj->getParameter($ser_desc);
         $header['SeriesNumber_'.$type]        = $FileObj->getParameter($ser_num);
         $header['EchoTime_'.$type]            = number_format(

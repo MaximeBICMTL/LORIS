@@ -57,7 +57,7 @@ class ProjectImagesRowProvisioner extends DBRowProvisioner
                s.Date_visit as Visit_date,
                s.CenterID as CenterID,
                p.Name as Site,
-               f.InsertTime as InsertTime,
+               UNIX_TIMESTAMP(f.InsertTime) as InsertTime,
                f.File as File,
                mst.MriScanTypeName AS ScanType,
                qc.QCStatus as QC_status,
@@ -80,7 +80,7 @@ class ProjectImagesRowProvisioner extends DBRowProvisioner
                c.Active = \'Y\' AND
                s.Active = \'Y\' AND
                project.Name = :v_projectname AND
-               f.InsertTime > :v_time
+               f.InsertTime > FROM_UNIXTIME(:v_time)
              ORDER BY f.InsertTime ASC
             ',
             [
@@ -103,4 +103,3 @@ class ProjectImagesRowProvisioner extends DBRowProvisioner
         return new ProjectImagesRow($row);
     }
 }
-

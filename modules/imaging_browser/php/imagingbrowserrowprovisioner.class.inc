@@ -195,7 +195,7 @@ class ImagingBrowserRowProvisioner extends \LORIS\Data\Provisioners\DBRowProvisi
               s.Visit_label as visitLabel,
               $PendingFailSubquery as Visit_QC_Status,
               DATE_FORMAT(MIN(f.AcquisitionDate), \"%Y-%m-%d\") as First_Acquisition,
-              FROM_UNIXTIME(MIN(f.InsertTime)) as First_Insertion,
+              MIN(f.InsertTime) as First_Insertion,
               FROM_UNIXTIME(MAX(fqc.QCLastChangeTime)) as Last_QC,
               $NewDataSubquery as New_Data,
               GROUP_CONCAT(DISTINCT OutputType) as Links,

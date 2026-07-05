@@ -311,7 +311,7 @@ class FeedbackMRI
                     'Value'           => $value,
                     'ParameterTypeID' => $parameterTypeID,
                     'FileID'          => $this->fileID,
-                    'InsertTime'      => time(),
+                    'InsertTime'      => date('Y-m-d H:i:s'),
                 ]
             );
         }
@@ -502,4 +502,3 @@ class FeedbackMRI
         return $where;
     }
 }
-

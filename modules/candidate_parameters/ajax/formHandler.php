@@ -130,7 +130,7 @@ function editCandInfoFields(\Database $db)
                     'ParameterTypeID' => $ptid,
                     'CandidateID'     => $candidateID,
                     'Value'           => $_POST[$field],
-                    'InsertTime'      => time(),
+                    'InsertTime'      => date('Y-m-d H:i:s'),
                 ];
 
                 $result = $db->pselectOne(
@@ -198,7 +198,7 @@ function editProbandInfoFields(\Database $db)
                     'ParameterTypeID' => $ptid,
                     'CandidateID'     => $candidateID,
                     'Value'           => $_POST[$field],
-                    'InsertTime'      => time(),
+                    'InsertTime'      => date('Y-m-d H:i:s'),
                 ];
 
                 $result = $db->pselectOne(
