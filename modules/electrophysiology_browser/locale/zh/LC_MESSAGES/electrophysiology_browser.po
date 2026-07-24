@@ -636,3 +636,64 @@ msgstr "查看会话"
 
 msgid "Channel Types"
 msgstr "通道类型"
+
+# MEEG-QC files and topographic maps
+msgid "No rows to display."
+msgstr "没有可显示的行。"
+
+msgid "Unknown file fetch error"
+msgstr "获取文件时发生未知错误"
+
+msgid "Unable to load file."
+msgstr "无法加载文件。"
+
+msgid "File preview is not supported for this file type."
+msgstr "不支持预览此类型的文件。"
+
+msgid "MEEGqc HTML file preview"
+msgstr "MEEGqc HTML 文件预览"
+
+msgid "Unable to load MEEGqc files."
+msgstr "无法加载 MEEGqc 文件。"
+
+msgid "No files available."
+msgstr "没有可用的文件。"
+
+msgid "Download all files"
+msgstr "下载所有文件"
+
+msgid "MEEGqc"
+msgstr "MEEGqc"
+
+msgid "Download category"
+msgstr "下载此分类"
+
+msgid "File"
+msgstr "文件"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "View"
+msgstr "查看"
+
+msgid "Failed to load topographic map image."
+msgstr "无法加载地形图像。"
+
+msgid "Failed to load topographic map: {{message}}"
+msgstr "无法加载地形图：{{message}}"
+
+msgid "Topographic map image"
+msgstr "地形图像"
+
+msgid "Channel Topography – {{start}}s to {{end}}s ({{duration}}s)"
+msgstr "通道拓扑图 – {{start}}秒至{{end}}秒（{{duration}}秒）"
+
+msgid "Image generated using the <mne>MNE</mne> library."
+msgstr "图像使用 <mne>MNE</mne> 库生成。"
+
+msgid "Download Image"
+msgstr "下载图像"
+
+msgid "View Topographic Map"
+msgstr "查看地形图"

@@ -633,3 +633,64 @@ msgstr ""
 
 msgid "Channel Types"
 msgstr ""
+
+# MEEG-QC files and topographic maps
+msgid "No rows to display."
+msgstr ""
+
+msgid "Unknown file fetch error"
+msgstr ""
+
+msgid "Unable to load file."
+msgstr ""
+
+msgid "File preview is not supported for this file type."
+msgstr ""
+
+msgid "MEEGqc HTML file preview"
+msgstr ""
+
+msgid "Unable to load MEEGqc files."
+msgstr ""
+
+msgid "No files available."
+msgstr ""
+
+msgid "Download all files"
+msgstr ""
+
+msgid "MEEGqc"
+msgstr ""
+
+msgid "Download category"
+msgstr ""
+
+msgid "File"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "View"
+msgstr ""
+
+msgid "Failed to load topographic map image."
+msgstr ""
+
+msgid "Failed to load topographic map: {{message}}"
+msgstr ""
+
+msgid "Topographic map image"
+msgstr ""
+
+msgid "Channel Topography – {{start}}s to {{end}}s ({{duration}}s)"
+msgstr ""
+
+msgid "Image generated using the <mne>MNE</mne> library."
+msgstr ""
+
+msgid "Download Image"
+msgstr ""
+
+msgid "View Topographic Map"
+msgstr ""

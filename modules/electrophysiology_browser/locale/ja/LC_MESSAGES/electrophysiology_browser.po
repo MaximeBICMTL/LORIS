@@ -633,3 +633,64 @@ msgstr "セッションを見る"
 
 msgid "Channel Types"
 msgstr "チャネルタイプ"
+
+# MEEG-QC files and topographic maps
+msgid "No rows to display."
+msgstr "表示する行がありません。"
+
+msgid "Unknown file fetch error"
+msgstr "ファイル取得中に不明なエラーが発生しました"
+
+msgid "Unable to load file."
+msgstr "ファイルを読み込めません。"
+
+msgid "File preview is not supported for this file type."
+msgstr "このファイル形式のプレビューはサポートされていません。"
+
+msgid "MEEGqc HTML file preview"
+msgstr "MEEGqc HTMLファイルのプレビュー"
+
+msgid "Unable to load MEEGqc files."
+msgstr "MEEGqcファイルを読み込めません。"
+
+msgid "No files available."
+msgstr "利用可能なファイルはありません。"
+
+msgid "Download all files"
+msgstr "すべてのファイルをダウンロード"
+
+msgid "MEEGqc"
+msgstr "MEEGqc"
+
+msgid "Download category"
+msgstr "カテゴリをダウンロード"
+
+msgid "File"
+msgstr "ファイル"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "View"
+msgstr "表示"
+
+msgid "Failed to load topographic map image."
+msgstr "トポグラフィックマップ画像を読み込めませんでした。"
+
+msgid "Failed to load topographic map: {{message}}"
+msgstr "トポグラフィックマップを読み込めませんでした: {{message}}"
+
+msgid "Topographic map image"
+msgstr "トポグラフィックマップ画像"
+
+msgid "Channel Topography – {{start}}s to {{end}}s ({{duration}}s)"
+msgstr "チャンネルトポグラフィー – {{start}}秒から{{end}}秒 ({{duration}}秒)"
+
+msgid "Image generated using the <mne>MNE</mne> library."
+msgstr "<mne>MNE</mne>ライブラリを使用して生成された画像です。"
+
+msgid "Download Image"
+msgstr "画像をダウンロード"
+
+msgid "View Topographic Map"
+msgstr "トポグラフィックマップを表示"
