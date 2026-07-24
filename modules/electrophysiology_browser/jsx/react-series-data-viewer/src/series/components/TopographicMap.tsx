@@ -1,4 +1,5 @@
 import {CSSProperties, useEffect, useState} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
 import Modal from 'jsx/Modal';
 import {
   HighPassFilterSelect,
@@ -8,6 +9,8 @@ import {
 declare const loris: {
   BaseURL: string;
 };
+
+const ns = {ns: 'electrophysiology_browser'};
 
 type TopographicMapState =
   | { status: 'loading' }
@@ -32,6 +35,7 @@ export function TopographicMap({
   highPass?: number,
   onImageURLChange?: (imageURL: string | null) => void,
 }) {
+  const {t} = useTranslation();
   const [state, setState] = useState<TopographicMapState>({ status: 'loading' });
 
   useEffect(() => {
@@ -69,7 +73,10 @@ export function TopographicMap({
             return;
           }
 
-          setState({ status: 'error', message: errorText || 'Failed to load topographic map image' });
+          setState({
+            status: 'error',
+            message: errorText || t('Failed to load topographic map image.', ns),
+          });
           return;
         }
 
@@ -87,7 +94,12 @@ export function TopographicMap({
           return;
         }
 
-        setState({ status: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
+        setState({
+          status: 'error',
+          message: err instanceof Error
+            ? err.message
+            : t('Unknown error', {ns: 'loris'}),
+        });
       }
     };
 
@@ -101,13 +113,13 @@ export function TopographicMap({
       }
       onImageURLChange?.(null);
     };
-  }, [physioFileID, tMin, tMax, lowPass, highPass, onImageURLChange]);
+  }, [physioFileID, tMin, tMax, lowPass, highPass, onImageURLChange, t]);
 
   switch (state.status) {
     case 'loading':
       return (
         <div style={topographicMapViewportStyle}>
-          Loading
+          {t('Loading...', {ns: 'loris'})}
           <span
             className='glyphicon glyphicon-refresh glyphicon-refresh-animate'>
           </span>
@@ -116,7 +128,10 @@ export function TopographicMap({
     case 'error':
       return (
         <div style={{...topographicMapViewportStyle, color: 'red'}}>
-          Failed to load topo: {state.message}
+          {t('Failed to load topographic map: {{message}}', {
+            ...ns,
+            message: state.message,
+          })}
         </div>
       );
     case 'success':
@@ -124,7 +139,7 @@ export function TopographicMap({
         <div style={topographicMapViewportStyle}>
           <img
             src={state.imageURL}
-            alt="Topographic map image"
+            alt={t('Topographic map image', ns)}
             style={{
               maxHeight: '100%',
               maxWidth: '100%',
@@ -147,6 +162,7 @@ export function TopographicMapModal({physioFileID, timeSelection, lowPass, highP
   show: boolean,
   setShow: (show: boolean) => void,
 }) {
+  const {t} = useTranslation();
   const [imageURL, setImageURL] = useState<string | null>(null);
   const [selectedLowPass, setSelectedLowPass] = useState(lowPass);
   const [selectedHighPass, setSelectedHighPass] = useState(highPass);
@@ -164,7 +180,15 @@ export function TopographicMapModal({physioFileID, timeSelection, lowPass, highP
   return (
     <Modal
       show={show}
-      title={`Channel Topography – ${tMin.toFixed(2)}s to ${tMax.toFixed(2)}s (${tAbs.toFixed(2)}s)`}
+      title={t(
+        'Channel Topography – {{start}}s to {{end}}s ({{duration}}s)',
+        {
+          ...ns,
+          start: tMin.toFixed(2),
+          end: tMax.toFixed(2),
+          duration: tAbs.toFixed(2),
+        }
+      )}
       onClose={() => setShow(false)}
       footer={
         <div style={{
@@ -174,7 +198,11 @@ export function TopographicMapModal({physioFileID, timeSelection, lowPass, highP
           width: '100%',
         }}>
           <span>
-            Image generated using the <a href="https://mne.tools">MNE</a> library.
+            <Trans
+              i18nKey='Image generated using the <mne>MNE</mne> library.'
+              ns='electrophysiology_browser'
+              components={{mne: <a href='https://mne.tools'/>}}
+            />
           </span>
           {imageURL && (
             <a
@@ -184,7 +212,7 @@ export function TopographicMapModal({physioFileID, timeSelection, lowPass, highP
             >
               <span className="glyphicon glyphicon-download-alt"></span>
               &nbsp;
-              Download Image
+              {t('Download Image', ns)}
             </a>
           )}
         </div>
@@ -235,6 +263,7 @@ export function TopographicMapButton({physioFileID, timeSelection, lowPass, high
   lowPass?: number,
   highPass?: number,
 }) {
+  const {t} = useTranslation();
   const [show, setShow] = useState(false);
 
   return (
@@ -245,7 +274,7 @@ export function TopographicMapButton({physioFileID, timeSelection, lowPass, high
         style={{width: 'fit-content'}}
         onClick={() => setShow(!show)}
       >
-        View Topographic Map
+        {t('View Topographic Map', ns)}
       </button>
       {timeSelection && (
         <TopographicMapModal

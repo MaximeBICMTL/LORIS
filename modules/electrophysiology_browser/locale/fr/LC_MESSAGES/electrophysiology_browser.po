@@ -779,3 +779,64 @@ msgstr "Voir la session"
 
 msgid "Channel Types"
 msgstr "Types de chaînes"
+
+# MEEG-QC files and topographic maps
+msgid "No rows to display."
+msgstr "Aucune ligne à afficher."
+
+msgid "Unknown file fetch error"
+msgstr "Erreur inconnue lors de la récupération du fichier"
+
+msgid "Unable to load file."
+msgstr "Impossible de charger le fichier."
+
+msgid "File preview is not supported for this file type."
+msgstr "L’aperçu n’est pas pris en charge pour ce type de fichier."
+
+msgid "MEEGqc HTML file preview"
+msgstr "Aperçu du fichier HTML MEEGqc"
+
+msgid "Unable to load MEEGqc files."
+msgstr "Impossible de charger les fichiers MEEGqc."
+
+msgid "No files available."
+msgstr "Aucun fichier disponible."
+
+msgid "Download all files"
+msgstr "Télécharger tous les fichiers"
+
+msgid "MEEGqc"
+msgstr "MEEGqc"
+
+msgid "Download category"
+msgstr "Télécharger la catégorie"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "View"
+msgstr "Afficher"
+
+msgid "Failed to load topographic map image."
+msgstr "Impossible de charger l’image de la carte topographique."
+
+msgid "Failed to load topographic map: {{message}}"
+msgstr "Impossible de charger la carte topographique : {{message}}"
+
+msgid "Topographic map image"
+msgstr "Image de la carte topographique"
+
+msgid "Channel Topography – {{start}}s to {{end}}s ({{duration}}s)"
+msgstr "Topographie des canaux – de {{start}} s à {{end}} s ({{duration}} s)"
+
+msgid "Image generated using the <mne>MNE</mne> library."
+msgstr "Image générée à l’aide de la bibliothèque <mne>MNE</mne>."
+
+msgid "Download Image"
+msgstr "Télécharger l’image"
+
+msgid "View Topographic Map"
+msgstr "Afficher la carte topographique"

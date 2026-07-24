@@ -7,6 +7,7 @@ import DetailsPanel from './DetailsPanel';
 import SummaryPanel from './SummaryPanel';
 import DownloadPanel from './DownloadPanel';
 import type {DownloadGroup} from './DownloadPanel';
+import MEEGqcFilesPanel from '../meegqc/MEEGqcFilesPanel';
 import {
   getRecordingChannelsURL,
   hasRecordingHED,
@@ -288,6 +289,13 @@ function RecordingSection({
                     />
                   </div>
                   <Montage />
+                  <div className='col-md-6 col-lg-4'>
+                    <MEEGqcFilesPanel
+                      id={'meegqc_files_' + fileIndex}
+                      physioFileID={file.id}
+                      t={t}
+                    />
+                  </div>
                   <div className='col-md-6 col-lg-4'>
                     <DownloadPanel
                       id={'file_download_' + fileIndex}
