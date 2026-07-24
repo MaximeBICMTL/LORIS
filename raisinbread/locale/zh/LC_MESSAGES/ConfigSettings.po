@@ -772,3 +772,22 @@ msgstr "用于组装数据的EEG S3数据路径"
 
 msgid "Path to store the EEG chunks for Visualization"
 msgstr "用于存储EEG数据块以进行可视化的路径"
+
+# Imaging Gateway
+msgid "Imaging Gateway"
+msgstr "影像网关"
+
+msgid "Settings for forwarding authenticated requests to the internal imaging service"
+msgstr "将已认证请求转发到内部影像服务的设置"
+
+msgid "Upstream URL"
+msgstr "上游 URL"
+
+msgid "Base HTTP(S) URL of the internal imaging service"
+msgstr "内部影像服务的基础 HTTP(S) URL"
+
+msgid "Connection timeout (seconds)"
+msgstr "连接超时（秒）"
+
+msgid "Maximum number of seconds to wait while connecting to the internal imaging service"
+msgstr "连接内部影像服务时等待的最大秒数"

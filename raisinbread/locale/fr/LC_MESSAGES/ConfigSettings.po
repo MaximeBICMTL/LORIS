@@ -767,3 +767,22 @@ msgstr "Chemin S3 des données EEG pour les données d'assemblage."
 
 msgid "Path to store the EEG chunks for Visualization"
 msgstr "Chemin où stocker les segments EEG utilisés pour la visualisation."
+
+# Imaging Gateway
+msgid "Imaging Gateway"
+msgstr "Passerelle d’imagerie"
+
+msgid "Settings for forwarding authenticated requests to the internal imaging service"
+msgstr "Paramètres de transfert des requêtes authentifiées vers le service d’imagerie interne"
+
+msgid "Upstream URL"
+msgstr "URL du service en amont"
+
+msgid "Base HTTP(S) URL of the internal imaging service"
+msgstr "URL HTTP(S) de base du service d’imagerie interne"
+
+msgid "Connection timeout (seconds)"
+msgstr "Délai d’attente de connexion (secondes)"
+
+msgid "Maximum number of seconds to wait while connecting to the internal imaging service"
+msgstr "Nombre maximal de secondes d’attente lors de la connexion au service d’imagerie interne"
