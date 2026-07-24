@@ -33,7 +33,7 @@ import TriggerableModal from 'jsx/TriggerableModal';
 import DatasetTagger from '../series/components/DatasetTagger';
 import {InfoIcon} from '../series/components/components';
 import {
-  parseElectrodes,
+  parseElectrodes, parseMegSensors, parseHeadShapePoints,
 } from '../series/store/logic/montage';
 
 declare global {
@@ -49,6 +49,8 @@ type CProps = {
   epochsURL: string,
   electrodesURL: string,
   coordSystemURL: string,
+  megSensorsURL: string,
+  megHeadShapeURL: string,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
   datasetTagEndorsements: any,
@@ -176,6 +178,36 @@ function EEGLabSeriesProvider(props: CProps) {
         console.error(error);
       });
   }, [props.electrodesURL]);
+
+  // Fetch the MEG sensors associated with that file.
+  useEffect(() => {
+    fetchJSON(props.megSensorsURL)
+      .then((json) => {
+        if (!json) {
+          return;
+        }
+
+        updateSensors(parseMegSensors(json));
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.megSensorsURL]);
+
+  // Fetch the MEG head shape points associated with that file.
+  useEffect(() => {
+    fetchJSON(props.megHeadShapeURL)
+      .then((json) => {
+        if (json === null) {
+          return;
+        }
+
+        updateSensors(parseHeadShapePoints(json));
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [props.megHeadShapeURL]);
 
   return (
     <ChannelInfosContext.Provider value={channelInfos}>
