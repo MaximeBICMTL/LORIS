@@ -114,6 +114,10 @@ function RecordingSection({
   const splitData = file.splitData;
   const recordingPanelID = 'filename_panel_' + fileIndex;
   const recordingBodyID = recordingPanelID + '_body';
+  const megSensorsURL
+    = `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/sensors`;
+  const megHeadShapeURL
+    = `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/headshape`;
   const channelsURL = getRecordingChannelsURL(
     loris.BaseURL,
     patient,
@@ -196,6 +200,8 @@ function RecordingSection({
                 events={events}
                 electrodesURL={electrodesURL}
                 coordSystemURL={coordSystemURL}
+                megSensorsURL={megSensorsURL}
+                megHeadShapeURL={megHeadShapeURL}
                 hedSchema={hedSchema}
                 datasetTags={datasetTags}
                 datasetTagEndorsements={datasetTagEndorsements}
