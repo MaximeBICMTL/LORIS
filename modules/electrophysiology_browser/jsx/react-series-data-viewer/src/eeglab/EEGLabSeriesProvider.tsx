@@ -49,8 +49,8 @@ type CProps = {
   epochsURL: string,
   electrodesURL: string,
   coordSystemURL: string,
-  megSensorsURL: string,
-  megHeadShapeURL: string,
+  megSensorsURL?: string,
+  megHeadShapeURL?: string,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
   datasetTagEndorsements: any,
@@ -181,6 +181,10 @@ function EEGLabSeriesProvider(props: CProps) {
 
   // Fetch the MEG sensors associated with that file.
   useEffect(() => {
+    if (!props.megSensorsURL) {
+      return;
+    }
+
     fetchJSON(props.megSensorsURL)
       .then((json) => {
         if (!json) {
@@ -196,6 +200,10 @@ function EEGLabSeriesProvider(props: CProps) {
 
   // Fetch the MEG head shape points associated with that file.
   useEffect(() => {
+    if (!props.megHeadShapeURL) {
+      return;
+    }
+
     fetchJSON(props.megHeadShapeURL)
       .then((json) => {
         if (json === null) {

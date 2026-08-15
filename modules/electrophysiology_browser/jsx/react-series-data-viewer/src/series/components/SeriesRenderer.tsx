@@ -87,6 +87,8 @@ import {UPDATE_VIEWED_CHUNKS} from '../store/logic/fetchChunks';
 import {ChannelInfosContext, ChannelMetasContext, HoveredChannelsContext} from '../../eeglab/EEGLabSeriesProvider';
 import {computePercentileRange, computeMean} from '../../utils';
 import MutableKeyDepCache from '../../MutableDepCache';
+import {ImagingGatewayCapabilitiesContext}
+  from '../../../../ImagingGatewayCapabilities';
 
 /**
  * The state of a channel type.
@@ -242,6 +244,9 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     const [panelIsDirty, setPanelIsDirty] = useState(false);
     const [eventChannels, setEventChannels] = useState([]);
     const {t} = useTranslation();
+    const imagingCapabilities = useContext(
+      ImagingGatewayCapabilitiesContext
+    );
 
     const bidsChannels = useContext(ChannelInfosContext);
 
@@ -1139,12 +1144,14 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     justifyContent: 'space-between',
                   }}
                 >
-                  <TopographicMapButton
-                    physioFileID={physioFileID}
-                    timeSelection={timeSelection}
-                    lowPass={getLowPassFilterFrequency(lowPass)}
-                    highPass={getHighPassFilterFrequency(highPass)}
-                  />
+                  {imagingCapabilities.topographicMap && (
+                    <TopographicMapButton
+                      physioFileID={physioFileID}
+                      timeSelection={timeSelection}
+                      lowPass={getLowPassFilterFrequency(lowPass)}
+                      highPass={getHighPassFilterFrequency(highPass)}
+                    />
+                  )}
                   <div id="right-panel-controls">
                     <ChannelTypesSelector
                       channelTypes={channelTypes}

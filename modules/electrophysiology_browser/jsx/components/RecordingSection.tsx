@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import type {ReactNode} from 'react';
 import type {TFunction} from 'i18next';
 import Panel from 'jsx/Panel';
@@ -8,6 +8,8 @@ import SummaryPanel from './SummaryPanel';
 import DownloadPanel from './DownloadPanel';
 import type {DownloadGroup} from './DownloadPanel';
 import MEEGqcFilesPanel from '../meegqc/MEEGqcFilesPanel';
+import {ImagingGatewayCapabilitiesContext}
+  from '../ImagingGatewayCapabilities';
 import {
   getRecordingChannelsURL,
   hasRecordingHED,
@@ -99,6 +101,7 @@ function RecordingSection({
   patient,
   t,
 }: RecordingSectionProps): React.ReactElement {
+  const imagingCapabilities = useContext(ImagingGatewayCapabilitiesContext);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const {
     chunksURLs,
@@ -115,10 +118,12 @@ function RecordingSection({
   const splitData = file.splitData;
   const recordingPanelID = 'filename_panel_' + fileIndex;
   const recordingBodyID = recordingPanelID + '_body';
-  const megSensorsURL
-    = `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/sensors`;
-  const megHeadShapeURL
-    = `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/headshape`;
+  const megSensorsURL = imagingCapabilities.megGeometry
+    ? `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/sensors`
+    : undefined;
+  const megHeadShapeURL = imagingCapabilities.megGeometry
+    ? `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/headshape`
+    : undefined;
   const channelsURL = getRecordingChannelsURL(
     loris.BaseURL,
     patient,
@@ -289,13 +294,15 @@ function RecordingSection({
                     />
                   </div>
                   <Montage />
-                  <div className='col-md-6 col-lg-4'>
-                    <MEEGqcFilesPanel
-                      id={'meegqc_files_' + fileIndex}
-                      physioFileID={file.id}
-                      t={t}
-                    />
-                  </div>
+                  {imagingCapabilities.meegqc && (
+                    <div className='col-md-6 col-lg-4'>
+                      <MEEGqcFilesPanel
+                        id={'meegqc_files_' + fileIndex}
+                        physioFileID={file.id}
+                        t={t}
+                      />
+                    </div>
+                  )}
                   <div className='col-md-6 col-lg-4'>
                     <DownloadPanel
                       id={'file_download_' + fileIndex}
