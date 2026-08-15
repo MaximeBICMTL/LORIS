@@ -14,6 +14,8 @@ import {withTranslation} from 'react-i18next';
 import DataTable from 'jsx/DataTable';
 import RecordingSection from './components/RecordingSection';
 import Sidebar from './components/Sidebar';
+import {ImagingGatewayCapabilitiesProvider}
+  from './ImagingGatewayCapabilities';
 import frStrings from '../locale/fr/LC_MESSAGES/electrophysiology_browser.json';
 import jaStrings from '../locale/ja/LC_MESSAGES/electrophysiology_browser.json';
 import zhStrings from '../locale/zh/LC_MESSAGES/electrophysiology_browser.json';
@@ -398,7 +400,7 @@ function ElectrophysiologySessionPage(props) {
   });
 
   return (
-    <>
+    <ImagingGatewayCapabilitiesProvider>
       {createPortal(
         <Sidebar
           next={navigation.next}
@@ -413,7 +415,7 @@ function ElectrophysiologySessionPage(props) {
         sessionid={sessionid}
         t={t}
       />
-    </>
+    </ImagingGatewayCapabilitiesProvider>
   );
 }
 
