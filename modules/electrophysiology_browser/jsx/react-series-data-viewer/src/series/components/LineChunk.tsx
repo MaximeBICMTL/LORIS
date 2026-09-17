@@ -10,12 +10,12 @@ const LineMemo = R.memoizeWith(
   ({amplitudeScale, interval, filters,
      channelIndex, traceIndex, chunkIndex,
      isStacked, DCOffset, numChannels,
-     numChunks, previousPoint,
+     numChunks, previousPoint, isHovered,
   }) =>
     `${amplitudeScale},${interval.join('-')},${filters.join('-')},`
     + `${channelIndex}-${traceIndex}-${chunkIndex},`
     + `${isStacked},${DCOffset},${numChannels},`
-    + `${numChunks},${previousPoint}`,
+    + `${numChunks},${previousPoint},${isHovered}`,
   ({
     channelIndex,
     traceIndex,
@@ -30,6 +30,7 @@ const LineMemo = R.memoizeWith(
     numChannels,
     numChunks,
     previousPoint,
+    isHovered,
     ...rest
    }: {
     values: Float32Array,
@@ -73,8 +74,10 @@ const LineMemo = R.memoizeWith(
         className={`channel-${channelIndex}`}
         vectorEffect="non-scaling-stroke"
         data={points}
-        strokeWidth={1}
-        stroke={isStacked
+        fill="none"
+        pointerEvents="stroke"
+        strokeWidth={isHovered ? 2 : 1}
+        stroke={isStacked || isHovered
           ? colorOrder(channelIndex.toString()).toString()
           : '#999'}
         {...rest}
@@ -178,6 +181,7 @@ const LineChunk = ({
           numChannels={numChannels}
           numChunks={numChunks}
           previousPoint={previousPoint}
+          isHovered={isHovered}
         />
       </Group>
     </Group>

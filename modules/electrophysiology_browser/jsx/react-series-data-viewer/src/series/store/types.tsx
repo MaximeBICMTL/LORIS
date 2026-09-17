@@ -1,5 +1,3 @@
-import React, {MutableRefObject} from 'react';
-
 export type Chunk = {
   index: number,
   originalValues: Float32Array,
@@ -66,14 +64,6 @@ export type Sensor = {
   name: string,
   channelIndex?: number,
   position: [number, number, number],
-};
-
-export type Cursor = {
-  cursorPosition: [number, number] | null,
-  viewerRef: MutableRefObject<any> | null,
-  // Hack to pass the hovered channels context to the Rx legacy "system".
-  hoveredChannels: number[],
-  setHoveredChannels: React.Dispatch<React.SetStateAction<number[]>>,
 };
 
 export type HEDSchemaElement = {

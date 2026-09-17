@@ -44,13 +44,11 @@ import {
 } from './PassFilterSelect';
 import {
   Channel,
-  Cursor,
   Epoch as EpochType,
   EpochFilter,
   Trace,
 } from '../store/types';
 import {setCurrentAnnotation} from '../store/state/currentAnnotation';
-import {setCursorInteraction} from '../store/logic/cursorInteraction';
 import {getEpochsInRange, updateActiveEpoch} from '../store/logic/filterEpochs';
 import HEDEndorsement from "./HEDEndorsement";
 import {useTranslation} from "react-i18next";
@@ -67,6 +65,7 @@ import {useAmplitude} from '../contexts/AmplitudeContext';
 import {usePassFilters} from '../contexts/PassFilterContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useViewedChannels} from '../hooks/useViewedChannels';
+import {useSetCursor} from '../contexts/CursorContext';
 
 /**
  * The state of a channel type.
@@ -128,14 +127,12 @@ type CProps = {
   setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   updateActiveEpoch: (_: number) => void,
-  setCursor: (_: Cursor) => void,
 };
 
 /**
  *
  */
 const SeriesRenderer: FunctionComponent<CProps> = ({
-  setCursor,
   chunksURL,
   epochs,
   filteredEpochs,
@@ -146,6 +143,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   physioFileID,
   updateActiveEpoch,
 }) => {
+    const setCursor = useSetCursor();
     const [viewerWidth, setViewerWidth] = useState(400);
     const [viewerHeight, setViewerHeight] = useState(DEFAULT_VIEWER_HEIGHT);
     const {rightPanel, setRightPanel} = useRightPanel();
@@ -1342,10 +1340,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                         setCursor({
                           cursorPosition: [cursor[0], cursor[1]],
                           viewerRef,
-                          hoveredChannels,
-                          setHoveredChannels,
                         });
-                      }, [hoveredChannels, setHoveredChannels, setCursor])}
+                      }, [setCursor])}
                       mouseDown={useCallback((v: Vector2) => {
                         document.addEventListener('mousemove', onMouseMove);
                         document.addEventListener('mouseup', onMouseUp);
@@ -1684,10 +1680,6 @@ export default connect(
     physioFileID: state.dataset.physioFileID,
   }),
   (dispatch: (_: any) => void) => ({
-    setCursor: R.compose(
-      dispatch,
-      setCursorInteraction
-    ),
     setDatasetMetadata: R.compose(
       dispatch,
       setDatasetMetadata

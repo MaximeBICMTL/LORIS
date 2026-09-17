@@ -11,6 +11,7 @@ import {useTranslation} from "react-i18next";
 import {getChannelUnit, useChannelInfo} from '../store/logic/channels';
 import {normalizeUnit, normalizeValueUnit} from '../../utils';
 import { HoveredChannelsContext } from '../../eeglab/EEGLabSeriesProvider';
+import {useCursorPosition} from '../contexts/CursorContext';
 
 type CursorContentProps = {
   time: number,
@@ -22,7 +23,6 @@ type CursorContentProps = {
 
 type CProps = {
   cursorRef: MutableRefObject<any>,
-  cursorPosition: [number, number],
   channels: Channel[],
   epochs: Epoch[],
   filteredEpochs: number[],
@@ -37,7 +37,6 @@ type CProps = {
  *
  * @param root0
  * @param root0.cursorRef
- * @param root0.cursorPosition
  * @param root0.channels
  * @param root0.epochs
  * @param root0.filteredEpochs
@@ -50,7 +49,6 @@ type CProps = {
 const SeriesCursor = (
   {
     cursorRef,
-    cursorPosition,
     channels,
     epochs,
     filteredEpochs,
@@ -62,6 +60,7 @@ const SeriesCursor = (
   }: CProps
 ) => {
   const {t} = useTranslation();
+  const cursorPosition = useCursorPosition();
   let reversedEpochs = [...filteredEpochs].reverse();
   useEffect(() => {
     reversedEpochs = [...filteredEpochs].reverse();
@@ -333,7 +332,6 @@ SeriesCursor.defaultProps = {
 
 export default connect(
   (state: RootState)=> ({
-    cursorPosition: state.cursor.cursorPosition,
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs.plotVisibility,
   })
