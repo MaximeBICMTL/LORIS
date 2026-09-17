@@ -34,10 +34,8 @@ import {InfoIcon} from '../series/components/components';
 import {
   parseElectrodes, parseMegSensors, parseHeadShapePoints,
 } from '../series/store/logic/montage';
-import {IntervalProvider} from '../series/IntervalContext';
-import {TimeSelectionProvider} from '../series/TimeSelectionContext';
-import {AmplitudeProvider} from '../series/AmplitudeContext';
-import {PassFilterProvider} from '../series/PassFilterContext';
+import {ViewerStateProviders}
+  from '../series/contexts/ViewerStateProviders';
 
 declare global {
   interface Window {
@@ -120,23 +118,6 @@ export const HoveredChannelsContext = createContext<HoveredChannelsType>({
   hoveredChannels: [],
   setHoveredChannels: ignoreSetHoveredChannels,
 });
-
-/**
- * Compose the React state providers used by the signal viewer.
- */
-function ViewerStateProviders({children}: {children: React.ReactNode}) {
-  return (
-    <PassFilterProvider>
-      <AmplitudeProvider>
-        <IntervalProvider>
-          <TimeSelectionProvider>
-            {children}
-          </TimeSelectionProvider>
-        </IntervalProvider>
-      </AmplitudeProvider>
-    </PassFilterProvider>
-  );
-}
 
 /**
  * Function wrapper around the older `EEGLabSeriesProviderClass` class

@@ -24,7 +24,7 @@ export const DEFAULT_MAX_CHANNELS = 16;
 
 export const CHANNEL_DISPLAY_OPTIONS = [4, 8, 16, 32, 64];
 
-export const DEFAULT_TIME_INTERVAL: [number, number] = [0, 5];
+export const DEFAULT_TIME_WINDOW: [number, number] = [0, 5];
 
 export const DEFAULT_VIEWER_HEIGHT = 700;
 

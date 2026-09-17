@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 
-type AmplitudeContextValue = {
+export type AmplitudeContextValue = {
   amplitudeScale: number,
   scaleAmplitude: (_: number) => void,
   resetAmplitude: () => void,

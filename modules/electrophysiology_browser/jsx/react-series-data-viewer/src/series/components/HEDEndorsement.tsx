@@ -9,8 +9,8 @@ import {RootState} from '../store';
 import Panel from './Panel';
 import {setEpochs} from "../store/state/dataset";
 import {useTranslation} from "react-i18next";
-import {useInterval} from '../IntervalContext';
-import {useTimeSelection} from '../TimeSelectionContext';
+import {useTimeWindow} from '../contexts/TimeWindowContext';
+import {useTimeSelection} from '../contexts/TimeSelectionContext';
 
 type CProps = {
   epochs: EpochType[],
@@ -51,7 +51,10 @@ const HEDEndorsement = ({
   canEndorse,
   pressedKey,
 }: CProps) => {
-  const {domain, setInterval} = useInterval();
+  const {
+    recordingTimeRange: domain,
+    setTimeWindow: setInterval,
+  } = useTimeWindow();
   const {setTimeSelection} = useTimeSelection();
 
   const HEDFilter = {

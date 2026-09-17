@@ -24,8 +24,8 @@ import {setFilteredEpochs} from '../store/state/dataset';
 import {CheckboxElement} from './Form';
 import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
-import {useInterval} from '../IntervalContext';
-import {useTimeSelection} from '../TimeSelectionContext';
+import {useTimeWindow} from '../contexts/TimeWindowContext';
+import {useTimeSelection} from '../contexts/TimeSelectionContext';
 
 type CProps = {
   epochs: EpochType[],
@@ -80,7 +80,11 @@ const EventManager = ({
   canEdit,
   tagsHaveChanges,
 }: CProps) => {
-  const {domain, interval, setInterval} = useInterval();
+  const {
+    recordingTimeRange: domain,
+    timeWindow: interval,
+    setTimeWindow: setInterval,
+  } = useTimeWindow();
   const {setTimeSelection} = useTimeSelection();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);

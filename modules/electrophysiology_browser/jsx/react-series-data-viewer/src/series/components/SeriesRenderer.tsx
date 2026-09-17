@@ -20,7 +20,7 @@ import {
   DEFAULT_MAX_CHANNELS,
   DEFAULT_SIGNAL_UNIT,
   Vector2,
-  DEFAULT_TIME_INTERVAL,
+  DEFAULT_TIME_WINDOW,
   DEFAULT_VIEWER_HEIGHT,
   MIN_EPOCH_WIDTH,
 } from '../../vector';
@@ -33,7 +33,7 @@ import LoadingBar from './LoadingBar';
 import {setRightPanel} from '../store/state/rightPanel';
 import {setDatasetMetadata} from '../store/state/dataset';
 import {createChannelTypesDict, filterDisplayedChannels, filterSelectedChannels, findBidsChannel} from '../store/logic/channels';
-import IntervalSelect from './IntervalSelect';
+import TimeWindowControls from './TimeWindowControls';
 import EventManager from './EventManager';
 import AnnotationForm from './AnnotationForm';
 import {TopographicMapButton} from './TopographicMap';
@@ -69,10 +69,10 @@ import {computePercentileRange, computeMean} from '../../utils';
 import MutableKeyDepCache from '../../MutableDepCache';
 import {ImagingGatewayCapabilitiesContext}
   from '../../../../ImagingGatewayCapabilities';
-import {useInterval} from '../IntervalContext';
-import {useTimeSelection} from '../TimeSelectionContext';
-import {useAmplitude} from '../AmplitudeContext';
-import {usePassFilters} from '../PassFilterContext';
+import {useTimeWindow} from '../contexts/TimeWindowContext';
+import {useTimeSelection} from '../contexts/TimeSelectionContext';
+import {useAmplitude} from '../contexts/AmplitudeContext';
+import {usePassFilters} from '../contexts/PassFilterContext';
 
 /**
  * The state of a channel type.
@@ -168,7 +168,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   physioFileID,
   updateActiveEpoch,
 }) => {
-    const {domain, interval, setInterval} = useInterval();
+    const {
+      recordingTimeRange: domain,
+      timeWindow: interval,
+      setTimeWindow: setInterval,
+    } = useTimeWindow();
     const {
       amplitudeScale,
       scaleAmplitude,
@@ -271,10 +275,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
    *
    */
   const zoomReset = () => {
-    const defaultInterval = DEFAULT_TIME_INTERVAL[1] - DEFAULT_TIME_INTERVAL[0];
+    const defaultTimeWindowDuration =
+      DEFAULT_TIME_WINDOW[1] - DEFAULT_TIME_WINDOW[0];
     const currentMidpoint = (interval[0] + interval[1]) / 2;
-    let lowerBound = currentMidpoint - defaultInterval / 2;
-    let upperBound = currentMidpoint + defaultInterval / 2;
+    let lowerBound = currentMidpoint - defaultTimeWindowDuration / 2;
+    let upperBound = currentMidpoint + defaultTimeWindowDuration / 2;
 
     if (lowerBound < domain[0]) {
       const difference = domain[0] - lowerBound;
@@ -363,7 +368,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     }
 
     store.dispatch(createAction(SET_CHANNELS)(channels));
-    store.dispatch(updateViewedChunks({domain, filters, interval}));
+    store.dispatch(updateViewedChunks({
+      filters,
+      recordingTimeRange: domain,
+      timeWindow: interval,
+    }));
   }, [displayedChannelIndexes]);
 
   // Function used to update the pagination offset index, with checks to prevent invalid indexes.
@@ -646,7 +655,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 
   const EpochsLayer = () => {
     const visibleEpochs = rightPanel ? getEpochsInRange(epochs, interval) : [];
-    const minEpochWidth = (interval[1] - interval[0]) * MIN_EPOCH_WIDTH / DEFAULT_TIME_INTERVAL[1];
+    const minEpochWidth = (
+      (interval[1] - interval[0])
+      * MIN_EPOCH_WIDTH
+      / DEFAULT_TIME_WINDOW[1]
+    );
 
     return (
       <Group>
@@ -1058,7 +1071,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
             onClick={zoomReset}
             disabled={
               (interval[1] - interval[0]) ===
-              (DEFAULT_TIME_INTERVAL[1] - DEFAULT_TIME_INTERVAL[0])
+              (DEFAULT_TIME_WINDOW[1] - DEFAULT_TIME_WINDOW[0])
             }
             value={t('Reset', {ns: 'loris'})}
           />
@@ -1165,7 +1178,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     }
                   </div>
                 </div>
-                <IntervalSelect />
+                <TimeWindowControls />
                 <div
                   style={{
                     display: 'flex',

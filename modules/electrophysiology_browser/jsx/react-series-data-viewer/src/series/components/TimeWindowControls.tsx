@@ -1,38 +1,41 @@
 import {Slider, Rail, Handles, Ticks} from 'react-compound-slider';
 import {Handle, Tick} from './components';
 import React, {useEffect, useState, FunctionComponent, useRef} from 'react';
-import {DEFAULT_TIME_INTERVAL} from '../../vector';
+import {DEFAULT_TIME_WINDOW} from '../../vector';
 import {roundTime} from '../../utils';
 import {useTranslation} from "react-i18next";
-import {useInterval} from '../IntervalContext';
+import {useTimeWindow} from '../contexts/TimeWindowContext';
+import {TimeRange} from '../contexts/types';
 
-export type IntervalSelectProps = {
+export type TimeWindowControlsProps = {
   viewerHeight?: number,
-  domain: [number, number],
-  interval: [number, number],
-  onIntervalChange: (_: [number, number]) => void,
+  recordingTimeRange: TimeRange,
+  timeWindow: TimeRange,
+  onTimeWindowChange: (_: TimeRange) => void,
 };
 
 /**
  *
  * @param root0
  * @param root0.viewerHeight
- * @param root0.domain
- * @param root0.interval
- * @param root0.onIntervalChange
+ * @param root0.recordingTimeRange
+ * @param root0.timeWindow
+ * @param root0.onTimeWindowChange
  */
-export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
+export const TimeWindowControls: FunctionComponent<
+  TimeWindowControlsProps
+> = ({
   viewerHeight = 20,
-  domain,
-  interval,
-  onIntervalChange,
+  recordingTimeRange,
+  timeWindow,
+  onTimeWindowChange,
 }) => {
   const {t} = useTranslation();
-  const [sliderInterval, setSliderInterval] = useState(interval);
+  const [sliderTimeWindow, setSliderTimeWindow] = useState(timeWindow);
 
   useEffect(() => {
-    setSliderInterval(interval);
-  }, [interval]);
+    setSliderTimeWindow(timeWindow);
+  }, [timeWindow]);
 
   const sliderStyle = {
     position: 'relative',
@@ -54,11 +57,11 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
    *
    * @param increment
    */
-  const increaseIntervalBy = (increment: number) => {
-    const intervalSize = interval[1] - interval[0];
-    onIntervalChange([
-      Math.min(domain[1] - intervalSize, interval[0] + increment),
-      Math.min(domain[1], interval[1] + increment),
+  const moveTimeWindowForwardBy = (increment: number) => {
+    const timeWindowSize = timeWindow[1] - timeWindow[0];
+    onTimeWindowChange([
+      Math.min(recordingTimeRange[1] - timeWindowSize, timeWindow[0] + increment),
+      Math.min(recordingTimeRange[1], timeWindow[1] + increment),
     ]);
   };
 
@@ -66,11 +69,11 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
    *
    * @param decrement
    */
-  const decreaseIntervalBy = (decrement: number) => {
-    const intervalSize = interval[1] - interval[0];
-    onIntervalChange([
-      Math.max(domain[0], interval[0] - decrement),
-      Math.max(domain[0] + intervalSize, interval[1] - decrement),
+  const moveTimeWindowBackwardBy = (decrement: number) => {
+    const timeWindowSize = timeWindow[1] - timeWindow[0];
+    onTimeWindowChange([
+      Math.max(recordingTimeRange[0], timeWindow[0] - decrement),
+      Math.max(recordingTimeRange[0] + timeWindowSize, timeWindow[1] - decrement),
     ]);
   };
 
@@ -78,41 +81,41 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
    *
    * @param event
    */
-  const handleIntervalChange = (event) => {
+  const handleTimeWindowChange = (event) => {
     const value = roundTime(parseFloat(event.target.value));
 
     if (isNaN(value)) {
       if (event.target.value === '') {
         if (event.target === lowerBoundInputRef.current) {
-          onIntervalChange([0, interval[1]]);
+          onTimeWindowChange([0, timeWindow[1]]);
         } else if (event.target === upperBoundInputRef.current) {
-          onIntervalChange([interval[0], 0]);
+          onTimeWindowChange([timeWindow[0], 0]);
         }
       }
       return;
     }
 
     if (event.target === lowerBoundInputRef.current) {
-      if (value > interval[1]) { // This condition causes a swap
+      if (value > timeWindow[1]) { // This condition causes a swap
         upperBoundInputRef.current.focus();
       }
 
-      if (value === roundTime(interval[1])) {
+      if (value === roundTime(timeWindow[1])) {
         return;
       } // do nothing if change causes overlap
 
       // Prevent exceeding max, which causes render
-      onIntervalChange([Math.min(value, domain[1]), interval[1]]);
+      onTimeWindowChange([Math.min(value, recordingTimeRange[1]), timeWindow[1]]);
     } else if (event.target === upperBoundInputRef.current) {
-      if (value < interval[0]) { // This condition causes a swap
+      if (value < timeWindow[0]) { // This condition causes a swap
         lowerBoundInputRef.current.focus();
       }
 
-      if (value === roundTime(interval[0])) {
+      if (value === roundTime(timeWindow[0])) {
         return;
       } // do nothing if change causes overlap
 
-      onIntervalChange([interval[0], value]);
+      onTimeWindowChange([timeWindow[0], value]);
     }
   };
 
@@ -120,16 +123,16 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
    *
    * @param event
    */
-  const handleIntervalBlur = (event) => {
+  const handleTimeWindowBlur = (event) => {
     const value = roundTime(parseFloat(event.target.value));
 
     if (isNaN(value)) {
-      onIntervalChange(interval); // Reset
+      onTimeWindowChange(timeWindow); // Reset
       return;
     }
 
-    if (interval[0] > interval[1] || interval[1] < interval[0]) {
-      onIntervalChange([interval[1], interval[0]]); // Invert
+    if (timeWindow[0] > timeWindow[1] || timeWindow[1] < timeWindow[0]) {
+      onTimeWindowChange([timeWindow[1], timeWindow[0]]); // Invert
     }
   };
 
@@ -157,7 +160,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                decreaseIntervalBy(interval[1] - interval[0]);
+                moveTimeWindowBackwardBy(timeWindow[1] - timeWindow[0]);
               }}
               value='<<'
             />
@@ -165,7 +168,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                decreaseIntervalBy(1);
+                moveTimeWindowBackwardBy(1);
               }}
               value='<'
             />
@@ -173,11 +176,11 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               ref={lowerBoundInputRef}
               className='input-interval-bound'
               type='number'
-              value={roundTime(interval[0])}
-              min={domain[0]}
-              max={domain[1]}
-              onChange={handleIntervalChange}
-              onBlur={handleIntervalBlur}
+              value={roundTime(timeWindow[0])}
+              min={recordingTimeRange[0]}
+              max={recordingTimeRange[1]}
+              onChange={handleTimeWindowChange}
+              onBlur={handleTimeWindowBlur}
               onFocus={(e) => e.target.select()}
               step={0.1}
             />
@@ -185,11 +188,11 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               ref={upperBoundInputRef}
               className='input-interval-bound'
               type='number'
-              value={roundTime(interval[1])}
-              min={domain[0]}
-              max={domain[1]}
-              onChange={handleIntervalChange}
-              onBlur={handleIntervalBlur}
+              value={roundTime(timeWindow[1])}
+              min={recordingTimeRange[0]}
+              max={recordingTimeRange[1]}
+              onChange={handleTimeWindowChange}
+              onBlur={handleTimeWindowBlur}
               onFocus={(e) => e.target.select()}
               step={0.1}
             />
@@ -197,7 +200,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                increaseIntervalBy(1);
+                moveTimeWindowForwardBy(1);
               }}
               value='>'
             />
@@ -205,7 +208,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                increaseIntervalBy(interval[1] - interval[0]);
+                moveTimeWindowForwardBy(timeWindow[1] - timeWindow[0]);
               }}
               value='>>'
             />
@@ -215,7 +218,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                onIntervalChange(DEFAULT_TIME_INTERVAL);
+                onTimeWindowChange(DEFAULT_TIME_WINDOW);
               }}
               value={t('Reset', {ns: 'loris'})}
             />
@@ -223,7 +226,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                onIntervalChange([domain[0], domain[1]]);
+                onTimeWindowChange([recordingTimeRange[0], recordingTimeRange[1]]);
               }}
               value={t('Show All', {ns: 'electrophysiology_browser'})}
             />
@@ -234,15 +237,15 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
         <Slider
           mode={2}
           rootStyle={sliderStyle}
-          domain={[domain[0], domain[1]]}
-          values={sliderInterval}
+          domain={[recordingTimeRange[0], recordingTimeRange[1]]}
+          values={sliderTimeWindow}
           onUpdate={(values) => {
-            const nextInterval: [number, number] = [values[0], values[1]];
-            setSliderInterval(nextInterval);
-            onIntervalChange(nextInterval);
+            const nextTimeWindow: TimeRange = [values[0], values[1]];
+            setSliderTimeWindow(nextTimeWindow);
+            onTimeWindowChange(nextTimeWindow);
           }}
           onChange={(values) => {
-            setSliderInterval([values[0], values[1]]);
+            setSliderTimeWindow([values[0], values[1]]);
           }}
         >
           {/* @ts-ignore */}
@@ -260,7 +263,7 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
                   <Handle
                     key={handle.id}
                     handle={handle}
-                    domain={domain}
+                    domain={recordingTimeRange}
                     getHandleProps={getHandleProps}
                   />
                 ))}
@@ -302,19 +305,23 @@ export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
   );
 };
 
-const ContextIntervalSelect: FunctionComponent<{
+const ContextTimeWindowControls: FunctionComponent<{
   viewerHeight?: number,
 }> = ({viewerHeight}) => {
-  const {domain, interval, setInterval} = useInterval();
+  const {
+    recordingTimeRange,
+    timeWindow,
+    setTimeWindow,
+  } = useTimeWindow();
 
   return (
-    <IntervalSelect
+    <TimeWindowControls
       viewerHeight={viewerHeight}
-      domain={domain}
-      interval={interval}
-      onIntervalChange={setInterval}
+      recordingTimeRange={recordingTimeRange}
+      timeWindow={timeWindow}
+      onTimeWindowChange={setTimeWindow}
     />
   );
 };
 
-export default ContextIntervalSelect;
+export default ContextTimeWindowControls;

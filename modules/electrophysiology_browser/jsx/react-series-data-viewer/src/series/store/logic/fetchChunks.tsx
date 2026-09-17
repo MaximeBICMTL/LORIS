@@ -9,6 +9,7 @@ import {fetchChunk} from '../../../chunks';
 import {MAX_VIEWED_CHUNKS} from '../../../vector';
 import {setChannels} from '../state/channels';
 import {SignalFilter} from './highLowPass';
+import {TimeRange} from '../../contexts/types';
 
 export const UPDATE_VIEWED_CHUNKS = 'UPDATE_VIEWED_CHUNKS';
 export const updateViewedChunks = createAction(UPDATE_VIEWED_CHUNKS);
@@ -123,12 +124,10 @@ export const fetchChunkAt = R.memoizeWith(
   }
 );
 
-type Interval = [number, number];
-
 type Viewport = {
-  domain: Interval,
+  recordingTimeRange: TimeRange,
   filters: Record<string, SignalFilter>,
-  interval: Interval,
+  timeWindow: TimeRange,
 };
 
 type State = {dataset: DatasetState, channels: Channel[]};
@@ -182,11 +181,17 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
 
                   const i0 =
                     (filledChunks *
-                      Math.floor(viewport.interval[0] - viewport.domain[0])
+                      Math.floor(
+                        viewport.timeWindow[0]
+                        - viewport.recordingTimeRange[0]
+                      )
                     ) / recordingDuration;
                   const i1 =
                     (filledChunks *
-                      Math.ceil(viewport.interval[1] - viewport.domain[0])
+                      Math.ceil(
+                        viewport.timeWindow[1]
+                        - viewport.recordingTimeRange[0]
+                      )
                     ) / recordingDuration;
                   return {
                     interval:
@@ -228,7 +233,7 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
                     ((chunkIndex + 1) / filledChunks) *
                     (timeInterval[1] - timeInterval[0]),
                   ];
-                  if (chunkInterval[0] <= viewport.interval[1]) {
+                  if (chunkInterval[0] <= viewport.timeWindow[1]) {
                     return fetchChunkAt(
                       chunksURL,
                       finestChunks.downsampling,

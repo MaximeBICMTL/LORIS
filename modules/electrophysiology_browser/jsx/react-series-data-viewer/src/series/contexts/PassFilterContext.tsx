@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import {useSelector} from 'react-redux';
-import {RootState} from './store';
+import {RootState} from '../store';
 import {
   applyFilter,
   getHighPassFilterKey,
@@ -16,7 +16,7 @@ import {
   LOW_PASS_FILTERS,
   FilterCoefficients,
   SignalFilter,
-} from './store/logic/highLowPass';
+} from '../store/logic/highLowPass';
 
 type PassFilterContextValue = {
   highPass?: number,

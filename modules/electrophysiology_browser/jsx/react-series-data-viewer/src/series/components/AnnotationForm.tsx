@@ -21,8 +21,8 @@ import {InfoIcon} from "./components";
 import {colorOrder} from "../../color";
 import {useTranslation} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
-import {useInterval} from '../IntervalContext';
-import {useTimeSelection} from '../TimeSelectionContext';
+import {useTimeWindow} from '../contexts/TimeWindowContext';
+import {useTimeSelection} from '../contexts/TimeSelectionContext';
 
 
 type CProps = {
@@ -80,7 +80,10 @@ const AnnotationForm = ({
   eventChannels,
   setEventChannels,
 }: CProps) => {
-  const {domain, interval} = useInterval();
+  const {
+    recordingTimeRange: domain,
+    timeWindow: interval,
+  } = useTimeWindow();
   const {timeSelection, setTimeSelection} = useTimeSelection();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);

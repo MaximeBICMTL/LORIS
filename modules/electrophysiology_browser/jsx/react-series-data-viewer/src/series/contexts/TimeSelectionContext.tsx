@@ -6,11 +6,12 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {MIN_INTERVAL} from '../vector';
-import {roundTime} from '../utils';
-import {useInterval} from './IntervalContext';
+import {MIN_INTERVAL} from '../../vector';
+import {roundTime} from '../../utils';
+import {useTimeWindow} from './TimeWindowContext';
+import {TimeRange} from './types';
 
-export type TimeSelection = [number, number] | null;
+export type TimeSelection = TimeRange | null;
 
 type TimeSelectionContextValue = {
   timeSelection: TimeSelection,
@@ -25,17 +26,19 @@ const TimeSelectionContext = createContext<
 >(undefined);
 
 /**
- * Own the transient selection drawn over the current time interval.
+ * Own the transient selection drawn over the current time window.
  */
 export const TimeSelectionProvider: FunctionComponent<{
   children: React.ReactNode,
 }> = ({children}) => {
-  const {interval} = useInterval();
+  const {timeWindow} = useTimeWindow();
   const [timeSelection, setTimeSelection] = useState<TimeSelection>(null);
 
   const getTimeAtPosition = useCallback((position: number) => {
-    return roundTime(interval[0] + position * (interval[1] - interval[0]));
-  }, [interval]);
+    return roundTime(
+      timeWindow[0] + position * (timeWindow[1] - timeWindow[0])
+    );
+  }, [timeWindow]);
 
   const startTimeSelection = useCallback((position: number) => {
     const time = getTimeAtPosition(position);
