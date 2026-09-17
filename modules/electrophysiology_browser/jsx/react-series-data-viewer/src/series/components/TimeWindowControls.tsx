@@ -1,5 +1,3 @@
-import {Slider, Rail, Handles, Ticks} from 'react-compound-slider';
-import {Handle, Tick} from './components';
 import React, {useEffect, useState} from 'react';
 import {DEFAULT_TIME_WINDOW} from '../../vector';
 import {roundTime} from '../../utils';
@@ -7,6 +5,7 @@ import {useTranslation} from "react-i18next";
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {TimeRange} from '../contexts/types';
 import {normalizeTimeWindow, shiftTimeWindow} from '../timeWindow';
+import TimeWindowSlider from './TimeWindowSlider';
 
 type TimeWindowBound = 0 | 1;
 
@@ -29,19 +28,6 @@ export default function TimeWindowControls() {
       String(roundTime(timeWindow[1])),
     ]);
   }, [timeWindow]);
-
-  const sliderStyle = {
-    position: 'relative',
-  };
-
-  const railStyle = {
-    position: 'absolute',
-    width: '100%',
-    height: 10,
-    marginTop: -9,
-    borderBottom: '1px solid #000',
-    cursor: 'pointer',
-  };
 
   const moveTimeWindowBy = (offset: number) => {
     setTimeWindow(shiftTimeWindow(
@@ -197,70 +183,11 @@ export default function TimeWindowControls() {
           </div>
         </div>
       </div>
-      <div style={{height: 20, position: 'relative'}}>
-        <Slider
-          mode={2}
-          rootStyle={sliderStyle}
-          domain={[recordingTimeRange[0], recordingTimeRange[1]]}
-          values={timeWindow}
-          onUpdate={(values) => {
-            const nextTimeWindow: TimeRange = [values[0], values[1]];
-            setTimeWindow(nextTimeWindow);
-          }}
-        >
-          {/* @ts-ignore */}
-          <Rail>
-            {({getRailProps}) => (
-              <div style={railStyle} {...getRailProps()} />
-            )}
-          </Rail>
-
-          {/* @ts-ignore */}
-          <Handles>
-            {({handles, getHandleProps}) => (
-              <div className="slider-handles">
-                {handles.map((handle) => (
-                  <Handle
-                    key={handle.id}
-                    handle={handle}
-                    domain={recordingTimeRange}
-                    getHandleProps={getHandleProps}
-                  />
-                ))}
-              </div>
-            )}
-          </Handles>
-
-          {/* @ts-ignore */}
-          <Ticks count={20}>
-            {({ticks}) => (
-              <div
-                className="slider-ticks"
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  pointerEvents: 'none',
-                }}
-              >
-                {ticks.map((tick) => (
-                  <Tick key={tick.id} tick={tick} count={ticks.length} />
-                ))}
-              </div>
-            )}
-          </Ticks>
-        </Slider>
-
-        <div
-          style={{
-            fontSize: 10,
-            top: '-25px',
-            right: '15px',
-            position: 'absolute',
-          }}
-        >
-          {t('Time (s)', {ns: 'electrophysiology_browser'})}
-        </div>
-      </div>
+      <TimeWindowSlider
+        recordingTimeRange={recordingTimeRange}
+        timeWindow={timeWindow}
+        onTimeWindowChange={setTimeWindow}
+      />
     </>
   );
 }
