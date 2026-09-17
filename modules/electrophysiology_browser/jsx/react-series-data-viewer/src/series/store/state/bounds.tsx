@@ -1,9 +1,6 @@
 import {createAction} from 'redux-actions';
 import {DEFAULT_VIEWER_HEIGHT} from '../../../vector';
 
-export const SET_AMPLITUDE_SCALE = 'SET_AMPLITUDE_SCALE';
-export const setAmplitudeScale = createAction(SET_AMPLITUDE_SCALE);
-
 export const SET_VIEWER_WIDTH = 'SET_VIEWER_WIDTH';
 export const setViewerWidth = createAction(SET_VIEWER_WIDTH);
 
@@ -11,28 +8,12 @@ export const SET_VIEWER_HEIGHT = 'SET_VIEWER_HEIGHT';
 export const setViewerHeight = createAction(SET_VIEWER_HEIGHT);
 
 export type Action =
-  | {type: 'SET_AMPLITUDE_SCALE', payload: number}
   | {type: 'SET_VIEWER_WIDTH', payload: number}
   | {type: 'SET_VIEWER_HEIGHT', payload: number}
 
 export type State = {
-  amplitudeScale: number,
   viewerWidth: number,
   viewerHeight: number,
-};
-
-/**
- * amplitudeScale reducer
- *
- * @param {State} state - The current state
- * @param {Action} action - The action
- * @returns {State} - The updated state
- */
-const amplitudeScale = (state = 1, action?: Action): number => {
-  if (action && action.type === 'SET_AMPLITUDE_SCALE') {
-    return action.payload;
-  }
-  return state;
 };
 
 /**
@@ -75,13 +56,11 @@ const viewerHeight = (
  */
 export const boundsReducer: (State, Action) => State = (
   state = {
-    amplitudeScale: amplitudeScale(),
     viewerWidth: viewerWidth(),
     viewerHeight: viewerHeight(),
   },
   action
 ) => ({
-  amplitudeScale: amplitudeScale(state.amplitudeScale, action),
   viewerWidth: viewerWidth(state.viewerWidth, action),
   viewerHeight: viewerHeight(state.viewerHeight, action),
 });

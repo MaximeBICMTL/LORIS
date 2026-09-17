@@ -11,6 +11,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from './store';
 import {updateViewedChunks} from './store/logic/fetchChunks';
 import {DEFAULT_TIME_INTERVAL} from '../vector';
+import {useAmplitude} from './AmplitudeContext';
 
 export type Interval = [number, number];
 
@@ -32,9 +33,7 @@ export const IntervalProvider: FunctionComponent<{
 }> = ({children}) => {
   const domain = useSelector((state: RootState) => state.dataset.timeInterval);
   const filters = useSelector((state: RootState) => state.filters);
-  const amplitudeScale = useSelector(
-    (state: RootState) => state.bounds.amplitudeScale
-  );
+  const {amplitudeScale} = useAmplitude();
   const [interval, updateInterval] = useState<Interval>(DEFAULT_TIME_INTERVAL);
   const dispatch = useDispatch();
 

@@ -14,10 +14,6 @@ import {
   createToggleEpochEpic,
 } from './logic/filterEpochs';
 import {
-  createScaleAmplitudesEpic,
-  createResetAmplitudesEpic,
-} from './logic/scaleAmplitudes';
-import {
   createLowPassFilterEpic,
   createHighPassFilterEpic,
 } from './logic/highLowPass';
@@ -38,11 +34,6 @@ export const rootEpic = combineEpics(
     dataset,
     channels,
   })),
-  createScaleAmplitudesEpic(({bounds}) => {
-    const {amplitudeScale} = bounds;
-    return amplitudeScale;
-  }),
-  createResetAmplitudesEpic(),
   createLowPassFilterEpic(),
   createHighPassFilterEpic(),
   createFilterEpochsEpic(({dataset}) => {

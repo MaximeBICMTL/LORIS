@@ -41,10 +41,6 @@ import {RootState} from '../store';
 import {createAction} from 'redux-actions';
 
 import {
-  setAmplitudesScale,
-  resetAmplitudesScale,
-} from '../store/logic/scaleAmplitudes';
-import {
   getHighPassFilterFrequency,
   getHighPassFilterKey,
   getLowPassFilterFrequency,
@@ -83,6 +79,7 @@ import {ImagingGatewayCapabilitiesContext}
   from '../../../../ImagingGatewayCapabilities';
 import {useInterval} from '../IntervalContext';
 import {useTimeSelection} from '../TimeSelectionContext';
+import {useAmplitude} from '../AmplitudeContext';
 
 /**
  * The state of a channel type.
@@ -137,7 +134,6 @@ type CProps = {
   ref: MutableRefObject<any>,
   viewerWidth: number,
   viewerHeight: number,
-  amplitudeScale: number,
   rightPanel: RightPanel,
   setRightPanel: (_: RightPanel | void) => void,
   chunksURL: string,
@@ -145,8 +141,6 @@ type CProps = {
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   activeEpoch: number,
-  setAmplitudesScale: (_: number) => void,
-  resetAmplitudesScale: (_: void) => void,
   setLowPassFilter: (_: string) => void,
   setHighPassFilter: (_: string) => void,
   setViewerWidth: (_: number) => void,
@@ -166,7 +160,6 @@ type CProps = {
 const SeriesRenderer: FunctionComponent<CProps> = ({
   viewerHeight,
   viewerWidth,
-  amplitudeScale,
   rightPanel,
   setCursor,
   setRightPanel,
@@ -175,8 +168,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   epochs,
   filteredEpochs,
   activeEpoch,
-  setAmplitudesScale,
-  resetAmplitudesScale,
   setLowPassFilter,
   setHighPassFilter,
   setViewerWidth,
@@ -189,6 +180,11 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   updateActiveEpoch,
 }) => {
     const {domain, interval, setInterval} = useInterval();
+    const {
+      amplitudeScale,
+      scaleAmplitude,
+      resetAmplitude,
+    } = useAmplitude();
     const {
       timeSelection,
       setTimeSelection,
@@ -490,10 +486,10 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
             zoomIn();
             break;
           case 'KeyN': // Lower amplitude scale
-            setAmplitudesScale(1.1);
+            scaleAmplitude(1.1);
             break;
           case 'KeyM': // Increase amplitude scale
-            setAmplitudesScale(0.9);
+            scaleAmplitude(0.9);
             break;
         }
       }
@@ -1198,20 +1194,20 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                         type='button'
                         style={{width: '20px'}}
                         className='btn btn-primary btn-xs'
-                        onClick={() => setAmplitudesScale(1.1)}
+                        onClick={() => scaleAmplitude(1.1)}
                         value='-'
                       />
                       <input
                         type='button'
                         className='btn btn-primary btn-xs'
-                        onClick={() => resetAmplitudesScale()}
+                        onClick={resetAmplitude}
                         value={t('Reset Amplitude', {ns: 'electrophysiology_browser'})}
                       />
                       <input
                         type='button'
                         style={{width: '20px'}}
                         className='btn btn-primary btn-xs'
-                        onClick={() => setAmplitudesScale(0.9)}
+                        onClick={() => scaleAmplitude(0.9)}
                         value='+'
                       />
                     </div>
@@ -1609,7 +1605,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 };
 
 SeriesRenderer.defaultProps = {
-  amplitudeScale: 1,
   viewerHeight: 400,
   channels: [],
   epochs: [],
@@ -1711,7 +1706,6 @@ export default connect(
   (state: RootState)=> ({
     viewerWidth: state.bounds.viewerWidth,
     viewerHeight: state.bounds.viewerHeight,
-    amplitudeScale: state.bounds.amplitudeScale,
     rightPanel: state.rightPanel,
     chunksURL: state.dataset.chunksURL,
     channels: state.channels,
@@ -1730,14 +1724,6 @@ export default connect(
     setRightPanel: R.compose(
       dispatch,
       setRightPanel
-    ),
-    setAmplitudesScale: R.compose(
-      dispatch,
-      setAmplitudesScale
-    ),
-    resetAmplitudesScale: R.compose(
-      dispatch,
-      resetAmplitudesScale
     ),
     setLowPassFilter: R.compose(
       dispatch,
