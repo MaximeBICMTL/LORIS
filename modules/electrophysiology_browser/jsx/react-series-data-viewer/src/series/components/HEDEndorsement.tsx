@@ -1,9 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {buildHEDString, getRootTags, updateActiveEpoch,} from '../store/logic/filterEpochs';
-import {Epoch as EpochType, HEDTag, RightPanel} from '../store/types';
+import {Epoch as EpochType, HEDTag} from '../store/types';
 import {connect} from 'react-redux';
-import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {RootState} from '../store';
 import Panel from './Panel';
@@ -11,12 +10,12 @@ import {setEpochs} from "../store/state/dataset";
 import {useTranslation} from "react-i18next";
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
+import {useRightPanel} from '../contexts/RightPanelContext';
 
 type CProps = {
   epochs: EpochType[],
   setCurrentAnnotation: (_: EpochType) => void,
   updateActiveEpoch: (_: number) => void,
-  setRightPanel: (_: RightPanel) => void,
   setEpochs: (_: EpochType[]) => void,
   activeEpoch: number,
   viewerHeight: number,
@@ -31,7 +30,6 @@ type CProps = {
  * @param root0.epochs
  * @param root0.updateActiveEpoch
  * @param root0.setCurrentAnnotation
- * @param root0.setRightPanel
  * @param root0.setEpochs
  * @param root0.activeEpoch
  * @param root0.viewerHeight
@@ -43,7 +41,6 @@ const HEDEndorsement = ({
   epochs,
   setCurrentAnnotation,
   updateActiveEpoch,
-  setRightPanel,
   setEpochs,
   activeEpoch,
   viewerHeight,
@@ -51,6 +48,7 @@ const HEDEndorsement = ({
   canEndorse,
   pressedKey,
 }: CProps) => {
+  const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
     setTimeWindow: setInterval,
@@ -1949,7 +1947,6 @@ HEDEndorsement.defaultProps = {};
 export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
-    rightPanel: state.rightPanel,
     viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
@@ -1964,10 +1961,6 @@ export default connect(
     updateActiveEpoch: R.compose(
       dispatch,
       updateActiveEpoch
-    ),
-    setRightPanel: R.compose(
-      dispatch,
-      setRightPanel
     ),
     setEpochs: R.compose(
       dispatch,

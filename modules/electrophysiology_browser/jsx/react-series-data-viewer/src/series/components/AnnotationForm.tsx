@@ -1,7 +1,6 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {ChannelMetadata, Epoch as EpochType, HEDSchemaElement, HEDTag, RightPanel,} from '../store/types';
+import {ChannelMetadata, Epoch as EpochType, HEDSchemaElement, HEDTag,} from '../store/types';
 import {connect} from 'react-redux';
-import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {
   getNthMemberTrailingBadgeIndex,
@@ -23,12 +22,12 @@ import {useTranslation} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
+import {useRightPanel} from '../contexts/RightPanelContext';
 
 
 type CProps = {
   epochs: EpochType[],
   filteredEpochs: number[],
-  setRightPanel: (_: RightPanel) => void,
   setEpochs: (_: EpochType[]) => void,
   currentAnnotation: EpochType,
   setCurrentAnnotation: (_: EpochType) => void,
@@ -48,7 +47,6 @@ type CProps = {
  *
  * @param root0
  * @param root0.epochs
- * @param root0.setRightPanel
  * @param root0.setEpochs
  * @param root0.currentAnnotation
  * @param root0.setCurrentAnnotation
@@ -65,7 +63,6 @@ type CProps = {
  */
 const AnnotationForm = ({
   epochs,
-  setRightPanel,
   setEpochs,
   currentAnnotation,
   setCurrentAnnotation,
@@ -80,6 +77,7 @@ const AnnotationForm = ({
   eventChannels,
   setEventChannels,
 }: CProps) => {
+  const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
     timeWindow: interval,
@@ -1627,10 +1625,6 @@ export default connect(
     channels: state.channels,
   }),
   (dispatch: (any) => void) => ({
-    setRightPanel: R.compose(
-      dispatch,
-      setRightPanel
-    ),
     toggleEpoch: R.compose(
       dispatch,
       toggleEpoch

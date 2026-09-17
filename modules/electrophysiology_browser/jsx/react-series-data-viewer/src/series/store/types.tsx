@@ -53,12 +53,6 @@ export type EventMetadata = {
   channelDelimiter: string,
 }
 
-export type RightPanel =
-  'annotationForm'
-  | 'eventList'
-  | 'hedEndorsement'
-  | null;
-
 export type CoordinateSystem = {
   name: string | 'Other',
   units: string | 'm',

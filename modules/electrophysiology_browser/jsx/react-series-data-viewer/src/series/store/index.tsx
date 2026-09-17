@@ -4,7 +4,6 @@ import {boundsReducer} from './state/bounds';
 import {datasetReducer} from './state/dataset';
 import {currentAnnotationReducer} from './state/currentAnnotation';
 import {cursorReducer} from './state/cursor';
-import {panelReducer} from './state/rightPanel';
 import {channelsReducer} from './state/channels';
 import {createFetchChunksEpic} from './logic/fetchChunks';
 import {
@@ -19,7 +18,6 @@ export const rootReducer = combineReducers({
   dataset: datasetReducer,
   currentAnnotation: currentAnnotationReducer,
   cursor: cursorReducer,
-  rightPanel: panelReducer,
   channels: channelsReducer,
 });
 

@@ -30,7 +30,6 @@ import LineChunk from './LineChunk';
 import Epoch from './Epoch';
 import SeriesCursor from './SeriesCursor';
 import LoadingBar from './LoadingBar';
-import {setRightPanel} from '../store/state/rightPanel';
 import {setDatasetMetadata} from '../store/state/dataset';
 import {createChannelTypesDict, filterDisplayedChannels, filterSelectedChannels, findBidsChannel} from '../store/logic/channels';
 import TimeWindowControls from './TimeWindowControls';
@@ -52,7 +51,7 @@ import {
   Channel,
   Cursor,
   Epoch as EpochType,
-  RightPanel, EpochFilter,
+  EpochFilter,
   Trace,
 } from '../store/types';
 import {setCurrentAnnotation} from '../store/state/currentAnnotation';
@@ -73,6 +72,7 @@ import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useAmplitude} from '../contexts/AmplitudeContext';
 import {usePassFilters} from '../contexts/PassFilterContext';
+import {useRightPanel} from '../contexts/RightPanelContext';
 
 /**
  * The state of a channel type.
@@ -127,8 +127,6 @@ type CProps = {
   ref: MutableRefObject<any>,
   viewerWidth: number,
   viewerHeight: number,
-  rightPanel: RightPanel,
-  setRightPanel: (_: RightPanel | void) => void,
   chunksURL: string,
   channels: Channel[],
   epochs: EpochType[],
@@ -151,9 +149,7 @@ type CProps = {
 const SeriesRenderer: FunctionComponent<CProps> = ({
   viewerHeight,
   viewerWidth,
-  rightPanel,
   setCursor,
-  setRightPanel,
   chunksURL,
   channels,
   epochs,
@@ -168,6 +164,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   physioFileID,
   updateActiveEpoch,
 }) => {
+    const {rightPanel, setRightPanel} = useRightPanel();
     const {
       recordingTimeRange: domain,
       timeWindow: interval,
@@ -1700,7 +1697,6 @@ export default connect(
   (state: RootState)=> ({
     viewerWidth: state.bounds.viewerWidth,
     viewerHeight: state.bounds.viewerHeight,
-    rightPanel: state.rightPanel,
     chunksURL: state.dataset.chunksURL,
     channels: state.channels,
     epochs: state.dataset.epochs,
@@ -1714,10 +1710,6 @@ export default connect(
     setCursor: R.compose(
       dispatch,
       setCursorInteraction
-    ),
-    setRightPanel: R.compose(
-      dispatch,
-      setRightPanel
     ),
     setViewerWidth: R.compose(
       dispatch,

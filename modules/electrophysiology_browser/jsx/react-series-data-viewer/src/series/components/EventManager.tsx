@@ -13,11 +13,9 @@ import {
   EpochFilter,
   HEDTag,
   HEDSchemaElement,
-  RightPanel,
   Channel
 } from '../store/types';
 import {connect} from 'react-redux';
-import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {RootState} from '../store';
 import {setFilteredEpochs} from '../store/state/dataset';
@@ -26,13 +24,12 @@ import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
+import {useRightPanel} from '../contexts/RightPanelContext';
 
 type CProps = {
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
-  rightPanel: RightPanel,
   setCurrentAnnotation: (_: EpochType) => void,
-  setRightPanel: (_: RightPanel) => void,
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
   setFilteredEpochs: (_: EpochFilter) => void,
@@ -50,9 +47,7 @@ type CProps = {
  * @param root0
  * @param root0.epochs
  * @param root0.filteredEpochs
- * @param root0.rightPanel
  * @param root0.setCurrentAnnotation
- * @param root0.setRightPanel
  * @param root0.toggleEpoch
  * @param root0.updateActiveEpoch
  * @param root0.setFilteredEpochs
@@ -66,9 +61,7 @@ type CProps = {
 const EventManager = ({
   epochs,
   filteredEpochs,
-  rightPanel,
   setCurrentAnnotation,
-  setRightPanel,
   toggleEpoch,
   updateActiveEpoch,
   setFilteredEpochs,
@@ -80,6 +73,7 @@ const EventManager = ({
   canEdit,
   tagsHaveChanges,
 }: CProps) => {
+  const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
     timeWindow: interval,
@@ -751,7 +745,6 @@ export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
-    rightPanel: state.rightPanel,
     viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
@@ -763,10 +756,6 @@ export default connect(
     setCurrentAnnotation: R.compose(
       dispatch,
       setCurrentAnnotation
-    ),
-    setRightPanel: R.compose(
-      dispatch,
-      setRightPanel
     ),
     toggleEpoch: R.compose(
       dispatch,
