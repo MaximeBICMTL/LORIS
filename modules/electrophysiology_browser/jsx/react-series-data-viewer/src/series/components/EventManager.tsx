@@ -4,20 +4,15 @@ import {
   buildHEDString,
   getEpochsInRange,
   getTagsForEpoch,
-  toggleEpoch,
-  updateActiveEpoch
 } from '../store/logic/filterEpochs';
 import {
   Epoch as EpochType,
-  EpochFilter,
   HEDTag,
   HEDSchemaElement,
   Channel
 } from '../store/types';
 import {connect} from 'react-redux';
-import * as R from 'ramda';
 import {RootState} from '../store';
-import {setFilteredEpochs} from '../store/state/dataset';
 import {CheckboxElement} from './Form';
 import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
@@ -25,13 +20,10 @@ import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
+import {useEvents} from '../contexts/EventContext';
 
 type CProps = {
   epochs: EpochType[],
-  filteredEpochs: EpochFilter,
-  toggleEpoch: (_: number) => void,
-  updateActiveEpoch: (_: number) => void,
-  setFilteredEpochs: (_: EpochFilter) => void,
   viewerHeight: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
@@ -59,10 +51,6 @@ type CProps = {
  */
 const EventManager = ({
   epochs,
-  filteredEpochs,
-  toggleEpoch,
-  updateActiveEpoch,
-  setFilteredEpochs,
   viewerHeight,
   hedSchema,
   datasetTags,
@@ -72,6 +60,12 @@ const EventManager = ({
   tagsHaveChanges,
 }: CProps) => {
   const {setCurrentAnnotation} = useCurrentAnnotation();
+  const {
+    eventFilter: filteredEpochs,
+    setEventFilter: setFilteredEpochs,
+    setActiveEvent: updateActiveEpoch,
+    toggleEvent: toggleEpoch,
+  } = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -180,13 +174,13 @@ const EventManager = ({
   }, [epochsInRange, filteredEpochs]);
 
   useEffect(() => {
-    setFilteredEpochs({
-      ...filteredEpochs,
+    setFilteredEpochs((currentFilter) => ({
+      ...currentFilter,
       searchVisibility: epochsInRange.filter(
         (epochIndex) =>
           indexVisibleBySearch(epochIndex)
       ),
-    });
+    }));
   }, [epochsInRange, searchText, ignoreNA, invertSearchResults, activeLabels, triggerUpdate]);
 
   const setCommentsInRangeVisibility = (visible) => {
@@ -743,24 +737,9 @@ EventManager.defaultProps = {};
 export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
-    filteredEpochs: state.dataset.filteredEpochs,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
     tagsHaveChanges: state.dataset.tagsHaveChanges,
-  }),
-  (dispatch: (_: any) => void) => ({
-    toggleEpoch: R.compose(
-      dispatch,
-      toggleEpoch
-    ),
-    updateActiveEpoch: R.compose(
-      dispatch,
-      updateActiveEpoch
-    ),
-    setFilteredEpochs: R.compose(
-      dispatch,
-      setFilteredEpochs
-    ),
   })
 )(EventManager);

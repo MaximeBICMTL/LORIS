@@ -2,7 +2,6 @@ import * as R from 'ramda';
 import {createAction} from 'redux-actions';
 import {
   Epoch,
-  EpochFilter,
   HEDSchemaElement,
   HEDTag,
 } from '../types';
@@ -10,12 +9,6 @@ import {DEFAULT_MAX_CHANNELS} from '../../../vector';
 
 export const SET_EPOCHS = 'SET_EPOCHS';
 export const setEpochs = createAction(SET_EPOCHS);
-
-export const SET_FILTERED_EPOCHS = 'SET_FILTERED_EPOCHS';
-export const setFilteredEpochs = createAction(SET_FILTERED_EPOCHS);
-
-export const SET_ACTIVE_EPOCH = 'SET_ACTIVE_EPOCH';
-export const setActiveEpoch = createAction(SET_ACTIVE_EPOCH);
 
 export const SET_PHYSIOFILE_ID = 'SET_PHYSIOFILE_ID';
 export const setPhysioFileID = createAction(SET_PHYSIOFILE_ID);
@@ -40,8 +33,6 @@ export const setDatasetMetadata = createAction(SET_DATASET_METADATA);
 
 export type Action =
   | {type: 'SET_EPOCHS', payload: Epoch[]}
-  | {type: 'SET_FILTERED_EPOCHS', payload: number[]}
-  | {type: 'SET_ACTIVE_EPOCH', payload: number}
   | {type: 'SET_PHYSIOFILE_ID', payload: number}
   | {type: 'SET_HED_SCHEMA_DOCUMENT', payload: HEDSchemaElement[]}
   | {type: 'SET_DATASET_TAGS', payload: any}
@@ -73,8 +64,6 @@ export type State = {
   samplingFrequency: string,
   eegMontageName: string,
   epochs: Epoch[],
-  filteredEpochs: EpochFilter,
-  activeEpoch: number | null,
   physioFileID: number | null,
   shapes: number[][],
   validSamples: number[],
@@ -100,12 +89,6 @@ export const datasetReducer = (
   state: State = {
     chunksURL: '',
     epochs: [],
-    filteredEpochs: {
-      plotVisibility: [],
-      columnVisibility: [],
-      searchVisibility: [],
-    },
-    activeEpoch: null,
     physioFileID: null,
     channelDelimiter: '',
     limit: DEFAULT_MAX_CHANNELS,
@@ -131,12 +114,6 @@ export const datasetReducer = (
   switch (action.type) {
   case SET_EPOCHS: {
     return R.assoc('epochs', action.payload, state);
-  }
-  case SET_FILTERED_EPOCHS: {
-    return R.assoc('filteredEpochs', action.payload, state);
-  }
-  case SET_ACTIVE_EPOCH: {
-    return R.assoc('activeEpoch', action.payload, state);
   }
   case SET_PHYSIOFILE_ID: {
     return R.assoc('physioFileID', action.payload, state);

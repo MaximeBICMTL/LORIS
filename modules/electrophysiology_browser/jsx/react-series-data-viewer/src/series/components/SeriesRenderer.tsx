@@ -45,10 +45,9 @@ import {
 import {
   Channel,
   Epoch as EpochType,
-  EpochFilter,
   Trace,
 } from '../store/types';
-import {getEpochsInRange, updateActiveEpoch} from '../store/logic/filterEpochs';
+import {getEpochsInRange} from '../store/logic/filterEpochs';
 import HEDEndorsement from "./HEDEndorsement";
 import {useTranslation} from "react-i18next";
 import ChannelTypesSelector from './ChannelTypesSelector';
@@ -66,6 +65,7 @@ import {useRightPanel} from '../contexts/RightPanelContext';
 import {useViewedChannels} from '../hooks/useViewedChannels';
 import {useSetCursor} from '../contexts/CursorContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
+import {useEvents} from '../contexts/EventContext';
 
 /**
  * The state of a channel type.
@@ -120,12 +120,9 @@ type CProps = {
   ref: MutableRefObject<any>,
   chunksURL: string,
   epochs: EpochType[],
-  filteredEpochs: EpochFilter,
-  activeEpoch: number,
   setDatasetMetadata: (_: { limit: number }) => void,
   limit: number,
   physioFileID: number,
-  updateActiveEpoch: (_: number) => void,
 };
 
 /**
@@ -134,14 +131,16 @@ type CProps = {
 const SeriesRenderer: FunctionComponent<CProps> = ({
   chunksURL,
   epochs,
-  filteredEpochs,
-  activeEpoch,
   setDatasetMetadata,
   limit,
   physioFileID,
-  updateActiveEpoch,
 }) => {
     const {setCurrentAnnotation} = useCurrentAnnotation();
+    const {
+      activeEvent: activeEpoch,
+      eventFilter: filteredEpochs,
+      setActiveEvent: updateActiveEpoch,
+    } = useEvents();
     const setCursor = useSetCursor();
     const [viewerWidth, setViewerWidth] = useState(400);
     const [viewerHeight, setViewerHeight] = useState(DEFAULT_VIEWER_HEIGHT);
@@ -1673,8 +1672,6 @@ export default connect(
   (state: RootState)=> ({
     chunksURL: state.dataset.chunksURL,
     epochs: state.dataset.epochs,
-    filteredEpochs: state.dataset.filteredEpochs,
-    activeEpoch: state.dataset.activeEpoch,
     limit: state.dataset.limit,
     physioFileID: state.dataset.physioFileID,
   }),
@@ -1682,10 +1679,6 @@ export default connect(
     setDatasetMetadata: R.compose(
       dispatch,
       setDatasetMetadata
-    ),
-    updateActiveEpoch: R.compose(
-      dispatch,
-      updateActiveEpoch
     ),
   })
 )(SeriesRenderer);

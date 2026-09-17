@@ -6,6 +6,7 @@ import {TimeWindowProvider} from './TimeWindowContext';
 import {RightPanelProvider} from './RightPanelContext';
 import {CursorProvider} from './CursorContext';
 import {CurrentAnnotationProvider} from './CurrentAnnotationContext';
+import {EventProvider} from './EventContext';
 
 /**
  * Compose the React state providers used by the signal viewer.
@@ -22,9 +23,11 @@ export function ViewerStateProviders({
           <PassFilterProvider>
             <AmplitudeProvider>
               <TimeWindowProvider>
-                <TimeSelectionProvider>
-                  {children}
-                </TimeSelectionProvider>
+                <EventProvider>
+                  <TimeSelectionProvider>
+                    {children}
+                  </TimeSelectionProvider>
+                </EventProvider>
               </TimeWindowProvider>
             </AmplitudeProvider>
           </PassFilterProvider>

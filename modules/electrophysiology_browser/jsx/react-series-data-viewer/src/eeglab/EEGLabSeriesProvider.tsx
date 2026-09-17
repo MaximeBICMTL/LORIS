@@ -8,10 +8,9 @@ import React, {
 } from 'react';
 import {applyMiddleware, createStore, Store} from 'redux';
 import {Provider} from 'react-redux';
-import {createEpicMiddleware} from 'redux-observable';
 import thunk from 'redux-thunk';
 import {fetchJSON, fetchText} from '../ajax';
-import {rootEpic, rootReducer} from '../series/store';
+import {rootReducer} from '../series/store';
 import {
   DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS,
 } from '../vector';
@@ -19,7 +18,6 @@ import {
   setDatasetMetadata,
   setDatasetTags,
   setEpochs,
-  setFilteredEpochs,
   setHedSchemaDocument,
   setPhysioFileID,
 } from '../series/store/state/dataset';
@@ -261,20 +259,15 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
    */
   constructor(props: CClassProps) {
     super(props);
-    // Legacy epics emit both Redux actions and thunk functions.
-    const epicMiddleware = createEpicMiddleware<any, any, any>();
-
     this.store = createStore(
       rootReducer,
-      applyMiddleware(thunk, epicMiddleware)
+      applyMiddleware(thunk)
     );
 
     this.state = {
       activeMenuOption: 'TAG_MODE',
       datasetTaggerTabsRef: createRef(),
     };
-
-    epicMiddleware.run(rootEpic);
 
     const {
       chunksURL,
@@ -493,18 +486,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
           return a.onset - b.onset;
         });
 
-      const timeInterval = this.store.getState().dataset.timeInterval;
       this.store.dispatch(setEpochs(sortedEpochs));
-      this.store.dispatch(setFilteredEpochs({
-        plotVisibility: sortedEpochs.reduce((indices, epoch, index) => {
-          if (!(epoch.onset < 1 && epoch.duration >= timeInterval[1])) {
-            indices.push(index); // Full-recording events not visible by default
-          }
-          return indices;
-        }, []),
-        columnVisibility: [],
-        searchVisibility: [],
-      }));
     });
   }
 

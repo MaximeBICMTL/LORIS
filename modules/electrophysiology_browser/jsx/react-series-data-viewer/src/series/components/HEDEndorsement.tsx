@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {buildHEDString, getRootTags, updateActiveEpoch,} from '../store/logic/filterEpochs';
+import {buildHEDString, getRootTags} from '../store/logic/filterEpochs';
 import {Epoch as EpochType, HEDTag} from '../store/types';
 import {connect} from 'react-redux';
 import * as R from 'ramda';
@@ -11,12 +11,11 @@ import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
+import {useEvents} from '../contexts/EventContext';
 
 type CProps = {
   epochs: EpochType[],
-  updateActiveEpoch: (_: number) => void,
   setEpochs: (_: EpochType[]) => void,
-  activeEpoch: number,
   viewerHeight: number,
   physioFileID: number,
   canEndorse: boolean,
@@ -38,15 +37,17 @@ type CProps = {
  */
 const HEDEndorsement = ({
   epochs,
-  updateActiveEpoch,
   setEpochs,
-  activeEpoch,
   viewerHeight,
   physioFileID,
   canEndorse,
   pressedKey,
 }: CProps) => {
   const {setCurrentAnnotation} = useCurrentAnnotation();
+  const {
+    activeEvent: activeEpoch,
+    setActiveEvent: updateActiveEpoch,
+  } = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -1949,13 +1950,8 @@ export default connect(
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     physioFileID: state.dataset.physioFileID,
-    activeEpoch: state.dataset.activeEpoch,
   }),
   (dispatch: (_: any) => void) => ({
-    updateActiveEpoch: R.compose(
-      dispatch,
-      updateActiveEpoch
-    ),
     setEpochs: R.compose(
       dispatch,
       setEpochs

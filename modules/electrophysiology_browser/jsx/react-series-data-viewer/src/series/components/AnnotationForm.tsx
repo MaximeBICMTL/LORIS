@@ -5,8 +5,6 @@ import * as R from 'ramda';
 import {
   getNthMemberTrailingBadgeIndex,
   getTagsForEpoch,
-  toggleEpoch,
-  updateActiveEpoch
 } from '../store/logic/filterEpochs';
 import {RootState} from '../store';
 import {setEpochs} from '../store/state/dataset';
@@ -23,15 +21,13 @@ import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
+import {useEvents} from '../contexts/EventContext';
 
 
 type CProps = {
   epochs: EpochType[],
-  filteredEpochs: number[],
   setEpochs: (_: EpochType[]) => void,
   physioFileID: number,
-  toggleEpoch: (_: number) => void,
-  updateActiveEpoch: (_: number) => void,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
   channelDelimiter: string,
@@ -63,8 +59,6 @@ const AnnotationForm = ({
   epochs,
   setEpochs,
   physioFileID,
-  toggleEpoch,
-  updateActiveEpoch,
   hedSchema,
   datasetTags,
   channelDelimiter,
@@ -74,6 +68,7 @@ const AnnotationForm = ({
   setEventChannels,
 }: CProps) => {
   const {currentAnnotation, setCurrentAnnotation} = useCurrentAnnotation();
+  const {setActiveEvent} = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -579,7 +574,7 @@ const AnnotationForm = ({
 
       setTimeout(() => {
         setAnnoMessage(''); // Empty string will cause success div to hide
-        updateActiveEpoch(epochs.indexOf(currentAnnotation ? currentAnnotation : newAnnotation));
+        setActiveEvent(epochs.indexOf(currentAnnotation ? currentAnnotation : newAnnotation));
       }, 2000);
     }).catch((error) => {
       console.error(error);
@@ -1011,7 +1006,7 @@ const AnnotationForm = ({
     handleReset();
     setCurrentAnnotation(null);
     setTimeSelection(null);
-    updateActiveEpoch(null);
+    setActiveEvent(null);
     setPanelIsDirty(false);
   }
 
@@ -1605,7 +1600,6 @@ const AnnotationForm = ({
 
 AnnotationForm.defaultProps = {
   epochs: [],
-  filteredEpochs: [],
   hedSchema: [],
 };
 
@@ -1613,20 +1607,11 @@ export default connect(
   (state: RootState)=> ({
     physioFileID: state.dataset.physioFileID,
     epochs: state.dataset.epochs,
-    filteredEpochs: state.dataset.filteredEpochs.plotVisibility,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
   }),
   (dispatch: (any) => void) => ({
-    toggleEpoch: R.compose(
-      dispatch,
-      toggleEpoch
-    ),
-    updateActiveEpoch: R.compose(
-      dispatch,
-      updateActiveEpoch
-    ),
     setEpochs: R.compose(
       dispatch,
       setEpochs
