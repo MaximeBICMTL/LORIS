@@ -93,7 +93,7 @@ export const applyFilter = (
     diffFilter.setACoefficients(coefficients.a);
     diffFilter.setBCoefficients(coefficients.b);
     diffFilter.run(); // eventually should be pixpipe's update()
-    return Array.from(diffFilter.getOutput()) as unknown as Float32Array;
+    return diffFilter.getOutput();
   }
   return input;
 };
