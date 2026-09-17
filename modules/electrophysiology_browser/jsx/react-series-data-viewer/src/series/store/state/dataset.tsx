@@ -1,14 +1,10 @@
 import * as R from 'ramda';
 import {createAction} from 'redux-actions';
 import {
-  Epoch,
   HEDSchemaElement,
   HEDTag,
 } from '../types';
 import {DEFAULT_MAX_CHANNELS} from '../../../vector';
-
-export const SET_EPOCHS = 'SET_EPOCHS';
-export const setEpochs = createAction(SET_EPOCHS);
 
 export const SET_PHYSIOFILE_ID = 'SET_PHYSIOFILE_ID';
 export const setPhysioFileID = createAction(SET_PHYSIOFILE_ID);
@@ -32,7 +28,6 @@ export const SET_DATASET_METADATA = 'SET_DATASET_METADATA';
 export const setDatasetMetadata = createAction(SET_DATASET_METADATA);
 
 export type Action =
-  | {type: 'SET_EPOCHS', payload: Epoch[]}
   | {type: 'SET_PHYSIOFILE_ID', payload: number}
   | {type: 'SET_HED_SCHEMA_DOCUMENT', payload: HEDSchemaElement[]}
   | {type: 'SET_DATASET_TAGS', payload: any}
@@ -63,7 +58,6 @@ export type State = {
   limit: number,
   samplingFrequency: string,
   eegMontageName: string,
-  epochs: Epoch[],
   physioFileID: number | null,
   shapes: number[][],
   validSamples: number[],
@@ -88,7 +82,6 @@ export type State = {
 export const datasetReducer = (
   state: State = {
     chunksURL: '',
-    epochs: [],
     physioFileID: null,
     channelDelimiter: '',
     limit: DEFAULT_MAX_CHANNELS,
@@ -112,9 +105,6 @@ export const datasetReducer = (
     return state;
   }
   switch (action.type) {
-  case SET_EPOCHS: {
-    return R.assoc('epochs', action.payload, state);
-  }
   case SET_PHYSIOFILE_ID: {
     return R.assoc('physioFileID', action.payload, state);
   }

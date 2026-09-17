@@ -1,11 +1,9 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {buildHEDString, getRootTags} from '../store/logic/filterEpochs';
-import {Epoch as EpochType, HEDTag} from '../store/types';
+import {buildHEDString, getRootTags} from '../store/logic/events';
+import {SeriesEvent, HEDTag} from '../store/types';
 import {connect} from 'react-redux';
-import * as R from 'ramda';
 import {RootState} from '../store';
 import Panel from './Panel';
-import {setEpochs} from "../store/state/dataset";
 import {useTranslation} from "react-i18next";
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
@@ -14,8 +12,6 @@ import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
 
 type CProps = {
-  epochs: EpochType[],
-  setEpochs: (_: EpochType[]) => void,
   viewerHeight: number,
   physioFileID: number,
   canEndorse: boolean,
@@ -25,19 +21,17 @@ type CProps = {
 /**
  *
  * @param root0
- * @param root0.epochs
- * @param root0.updateActiveEpoch
+ * @param root0.events
+ * @param root0.updateActiveEvent
  * @param root0.setCurrentAnnotation
- * @param root0.setEpochs
- * @param root0.activeEpoch
+ * @param root0.setEvents
+ * @param root0.activeEvent
  * @param root0.viewerHeight
  * @param root0.physioFileID
  * @param root0.canEndorse
  * @param root0.pressedKey
  */
 const HEDEndorsement = ({
-  epochs,
-  setEpochs,
   viewerHeight,
   physioFileID,
   canEndorse,
@@ -45,8 +39,10 @@ const HEDEndorsement = ({
 }: CProps) => {
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
-    activeEvent: activeEpoch,
-    setActiveEvent: updateActiveEpoch,
+    events,
+    setEvents,
+    activeEvent,
+    setActiveEvent: updateActiveEvent,
   } = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
@@ -73,7 +69,7 @@ const HEDEndorsement = ({
   }
   const {t} = useTranslation();
   const [activeFilter, setActiveFilter] = useState(HEDFilter.NO_FILTER);
-  const [filteredHEDEpochs, setFilteredHEDEpochs] = useState([]);
+  const [filteredHEDEvents, setFilteredHEDEvents] = useState([]);
   const [numTags, setNumTags] = useState(0);
   const [totalHEDTags, setTotalHEDTags] = useState(0);
   const filterMenuRef = useRef(null);
@@ -124,40 +120,40 @@ const HEDEndorsement = ({
   }
 
   useEffect(() => {
-    const filteredEpochs = epochs.filter((epoch) => {
-      return epoch.hed.length > 0;
+    const filteredEvents = events.filter((event) => {
+      return event.hed.length > 0;
     });
 
-    setFilteredHEDEpochs(filteredEpochs.map((epoch) => {
+    setFilteredHEDEvents(filteredEvents.map((event) => {
       return {
-        epoch: epoch,
-        epochIndex: epochs.indexOf(epoch),
-        tagGroups: getRootTags(epoch.hed)
+        event: event,
+        eventIndex: events.indexOf(event),
+        tagGroups: getRootTags(event.hed)
           .filter((rootTag) => {
             switch (activeFilter) {
               case HEDFilter.NO_FILTER:
                 return true;
               case HEDFilter.ENDORSED:
-                return !tagInGroupIsEndorsed(rootTag, epoch.hed);
+                return !tagInGroupIsEndorsed(rootTag, event.hed);
               case HEDFilter.CAVEAT:
-                return tagInGroupHasCaveat(rootTag, epoch.hed);
+                return tagInGroupHasCaveat(rootTag, event.hed);
               case HEDFilter.WITH_COMMENT:
-                return tagInGroupHasComment(rootTag, epoch.hed);
+                return tagInGroupHasComment(rootTag, event.hed);
               case HEDFilter.TAGGED_BY:
-                return tagInGroupTaggedBy(rootTag, epoch.hed, activeSubmenuItem.id);
+                return tagInGroupTaggedBy(rootTag, event.hed, activeSubmenuItem.id);
               case HEDFilter.ENDORSED_BY:
-                return tagInGroupEndorsedBy(rootTag, epoch.hed, activeSubmenuItem.id);
+                return tagInGroupEndorsedBy(rootTag, event.hed, activeSubmenuItem.id);
               case HEDFilter.CAVEAT_BY:
-                return tagInGroupIsCaveatBy(rootTag, epoch.hed, activeSubmenuItem.id);
+                return tagInGroupIsCaveatBy(rootTag, event.hed, activeSubmenuItem.id);
             }
           })
           .filter((rootTag) => {
             if (searchText.length > 0) {
-              return tagInGroupContainsSearchText(rootTag, epoch.hed, searchText)
+              return tagInGroupContainsSearchText(rootTag, event.hed, searchText)
             }
             return true;
           })
-          .map(rootTag => buildTagGroup(rootTag, epoch.hed)),
+          .map(rootTag => buildTagGroup(rootTag, event.hed)),
       }
     }));
   }, [
@@ -167,12 +163,12 @@ const HEDEndorsement = ({
 
 
   useEffect(() => {
-    const totalHEDTags =  filteredHEDEpochs
-      .map(epoch => epoch.tagGroups)
+    const totalHEDTags =  filteredHEDEvents
+      .map(event => event.tagGroups)
       .reduce((a, b) => a + b.length, 0);
     setTotalHEDTags(totalHEDTags);
     setActiveItemIndex(0);
-  }, [filteredHEDEpochs]);
+  }, [filteredHEDEvents]);
 
   const classChange = (mutationList) => {
     mutationList
@@ -190,16 +186,16 @@ const HEDEndorsement = ({
     classObserver.observe(filterDropdown, { attributes: true, });
 
 
-    setNumTags(epochs.filter((epoch) => {
-      return epoch.hed.length > 0;
-    }).map((epoch) => {
+    setNumTags(events.filter((event) => {
+      return event.hed.length > 0;
+    }).map((event) => {
       return {
-        epoch: epoch,
-        epochIndex: epochs.indexOf(epoch),
-        tagGroups: getRootTags(epoch.hed)
-          .map(rootTag => buildTagGroup(rootTag, epoch.hed))
+        event: event,
+        eventIndex: events.indexOf(event),
+        tagGroups: getRootTags(event.hed)
+          .map(rootTag => buildTagGroup(rootTag, event.hed))
       }})
-        .map(epoch => epoch.tagGroups)
+        .map(event => event.tagGroups)
         .reduce((a, b) => a + b.length, 0));
 
     return () => {
@@ -251,7 +247,7 @@ const HEDEndorsement = ({
   }, [activeItemIndex]);
 
   const getItemAtIndex = (itemIndex) => {
-    const tags = filteredHEDEpochs.map((event) => {
+    const tags = filteredHEDEvents.map((event) => {
       return event.tagGroups.flat();
     }).flat();
     return tags[itemIndex];
@@ -262,11 +258,11 @@ const HEDEndorsement = ({
   }
 
   const getItemEvent = (item) => {
-    return item && epochs.find((epoch) => {
-      const epochHED = epoch.hed;
+    return item && events.find((event) => {
+      const eventHED = event.hed;
       return (
-        epochHED &&
-        epochHED.find(hed => hed.ID === item.ID)
+        eventHED &&
+        eventHED.find(hed => hed.ID === item.ID)
       );
     })
   }
@@ -275,26 +271,26 @@ const HEDEndorsement = ({
     return getItemEvent(getActiveItem());
   }
 
-  const getEpochIndex = (epoch) => {
-    return epoch ? epochs.findIndex(e => e.physiologicalTaskEventID === epoch.physiologicalTaskEventID) : null;
+  const getEventIndex = (event) => {
+    return event ? events.findIndex(e => e.physiologicalTaskEventID === event.physiologicalTaskEventID) : null;
   }
 
   useEffect(() => {
-    const epochIndex = (getEpochIndex(getActiveEvent()));
-    if (epochIndex) {
-      if (activeEpoch === null) {
-        updateActiveEpoch(epochIndex);
-      } else if (epochIndex !== activeEpoch) {
-        updateActiveEpoch(activeEpoch);
+    const eventIndex = (getEventIndex(getActiveEvent()));
+    if (eventIndex) {
+      if (activeEvent === null) {
+        updateActiveEvent(eventIndex);
+      } else if (eventIndex !== activeEvent) {
+        updateActiveEvent(activeEvent);
       }
     }
-  }, [filteredHEDEpochs, activeEpoch]);
+  }, [filteredHEDEvents, activeEvent]);
 
   useEffect(() => {
-    const epochIndex = (getEpochIndex(getActiveEvent()));
-    if (epochIndex) {
-      if (epochIndex !== activeEpoch) {
-        updateActiveEpoch(epochIndex);
+    const eventIndex = (getEventIndex(getActiveEvent()));
+    if (eventIndex) {
+      if (eventIndex !== activeEvent) {
+        updateActiveEvent(eventIndex);
       }
     }
   }, [activeItemIndex]);
@@ -362,7 +358,7 @@ const HEDEndorsement = ({
       return;
     }
 
-    const currentEpoch = getActiveEvent();
+    const currentEvent = getActiveEvent();
 
     switch (pressedKey) {
       case 'ArrowUp':
@@ -374,12 +370,12 @@ const HEDEndorsement = ({
       case 'ArrowLeft':
         const previousIndex = jsModulo(activeItemIndex - 1, totalHEDTags);
         setActiveItemIndex(previousIndex);
-        jumpToEpoch(getItemEvent(getItemAtIndex(previousIndex)));
+        jumpToEvent(getItemEvent(getItemAtIndex(previousIndex)));
         break;
       case 'ArrowRight':
         const nextIndex = jsModulo(activeItemIndex + 1, totalHEDTags);
         setActiveItemIndex(nextIndex);
-        jumpToEpoch(getItemEvent(getItemAtIndex(nextIndex)));
+        jumpToEvent(getItemEvent(getItemAtIndex(nextIndex)));
         break;
       case 'KeyC':
         selectActiveItemTagAction('Caveat');
@@ -397,13 +393,13 @@ const HEDEndorsement = ({
         checkItemAtIndexVisibility(activeItemIndex);
         break;
       case 'KeyJ':
-        if (currentEpoch) {
-          jumpToEpoch(currentEpoch);
+        if (currentEvent) {
+          jumpToEvent(currentEvent);
         }
         break;
       case 'KeyK':
-        if (currentEpoch) {
-          handleEditClick(currentEpoch);
+        if (currentEvent) {
+          handleEditClick(currentEvent);
         }
         break;
     }
@@ -492,27 +488,27 @@ const HEDEndorsement = ({
     return tagGroup;
   }
 
-  const jumpToEpoch = (epoch: EpochType) => {
-    if (!epoch) { return; }
+  const jumpToEvent = (event: SeriesEvent) => {
+    if (!event) { return; }
 
-    const epochTimeRange = [
-      epoch.onset,
+    const eventTimeRange = [
+      event.onset,
       Math.max(
-        epoch.onset + epoch.duration,
-        epoch.onset + 0.1
+        event.onset + event.duration,
+        event.onset + 0.1
       )
     ].sort();
     setInterval([
-      Math.max(0, epochTimeRange[0] - 0.1),
-      Math.min(epochTimeRange[1], domain[1])
+      Math.max(0, eventTimeRange[0] - 0.1),
+      Math.min(eventTimeRange[1], domain[1])
     ]);
   };
 
-  const handleEditClick = (epoch) => {
-    setCurrentAnnotation(epoch);
+  const handleEditClick = (event) => {
+    setCurrentAnnotation(event);
     setRightPanel('annotationForm');
-    const startTime = epoch.onset;
-    const endTime = epoch.duration + startTime;
+    const startTime = event.onset;
+    const endTime = event.duration + startTime;
     setTimeSelection([startTime, endTime]);
   };
 
@@ -550,21 +546,19 @@ const HEDEndorsement = ({
         EndorsementStatus:  panel.tagAction,
         EndorsementTime: response.endorsementTime,
       };
-      const epochWithEndorsement = epochs.find((epoch) => {
-        return epoch.hed.map(tag => tag.ID).includes(rootTagID);
+      const eventWithEndorsement = events.find((event) => {
+        return event.hed.map(tag => tag.ID).includes(rootTagID);
       });
-      if (!epochWithEndorsement)
-        throw 'Epoch not found';
+      if (!eventWithEndorsement)
+        throw 'Event not found';
 
-      epochs.splice(epochs.indexOf(epochWithEndorsement), 1);
-      const hedWithEndorsement = epochWithEndorsement.hed.find(
+      const hedWithEndorsement = eventWithEndorsement.hed.find(
         tag => tag.ID === rootTagID
       );
-      epochWithEndorsement.hed.splice(epochWithEndorsement.hed.indexOf(hedWithEndorsement), 1);
-      epochs.push({
-        ...epochWithEndorsement,
+      const updatedEvent = {
+        ...eventWithEndorsement,
         hed: [
-          ...epochWithEndorsement.hed,
+          ...eventWithEndorsement.hed.filter((tag) => tag !== hedWithEndorsement),
           {
             ...hedWithEndorsement,
             Endorsements: [
@@ -573,13 +567,10 @@ const HEDEndorsement = ({
             ]
           }
         ]
-      });
-      setEpochs(
-        epochs
-          .sort(function(a, b) {
-            return a.onset - b.onset;
-          })
-      );
+      };
+      setEvents(events.map((event) => (
+        event === eventWithEndorsement ? updatedEvent : event
+      )));
       setSendingRequest(false);
 
       // TODO: Handle non-success
@@ -812,8 +803,8 @@ const HEDEndorsement = ({
                     switch (filterName) {
                       case HEDFilter.TAGGED_BY:
                         // Unique list of taggers
-                        itemList = filteredHEDEpochs.reduce((taggers, hedEpoch) => {
-                          hedEpoch.epoch.hed.forEach((hedTagger) => {
+                        itemList = filteredHEDEvents.reduce((taggers, hedEvent) => {
+                          hedEvent.event.hed.forEach((hedTagger) => {
                             if (!taggers.map(
                               tagger => tagger.id
                             ).includes(hedTagger.TaggedBy))
@@ -830,8 +821,8 @@ const HEDEndorsement = ({
                         break;
                       case HEDFilter.ENDORSED_BY:
                         // Unique list of endorsers
-                        itemList = filteredHEDEpochs.reduce((endorsements, hedEpoch) => {
-                          const hedEndorsements = hedEpoch.epoch.hed
+                        itemList = filteredHEDEvents.reduce((endorsements, hedEvent) => {
+                          const hedEndorsements = hedEvent.event.hed
                             .map(tag => tag.Endorsements).flat()
                             .filter(endorsement => endorsement.EndorsementStatus === 'Endorsed')
                           hedEndorsements.forEach((endorsement) => {
@@ -852,8 +843,8 @@ const HEDEndorsement = ({
                         break;
                       case HEDFilter.CAVEAT_BY: // TODO: Consider merging with above
                         // Unique list of caveat authors
-                        itemList = filteredHEDEpochs.reduce((endorsements, hedEpoch) => {
-                          const hedEndorsements = hedEpoch.epoch.hed
+                        itemList = filteredHEDEvents.reduce((endorsements, hedEvent) => {
+                          const hedEndorsements = hedEvent.event.hed
                             .map(tag => tag.Endorsements).flat()
                             .filter(endorsement => endorsement.EndorsementStatus === 'Caveat');
 
@@ -1100,7 +1091,7 @@ const HEDEndorsement = ({
               />
               <button
                 className='btn btn-primary btn-xs'
-                onClick={() => jumpToEpoch(getActiveEvent())}
+                onClick={() => jumpToEvent(getActiveEvent())}
                 style={{ marginLeft: '-1px', }}
               >
                 <i className={'glyphicon glyphicon-step-forward'} />
@@ -1120,7 +1111,7 @@ const HEDEndorsement = ({
               onClick={() => {
                 const previousIndex = jsModulo(activeItemIndex - 1, totalHEDTags)
                 setActiveItemIndex(previousIndex);
-                jumpToEpoch(getItemEvent(getItemAtIndex(previousIndex)));
+                jumpToEvent(getItemEvent(getItemAtIndex(previousIndex)));
               }}
               onMouseEnter={() => setHoveredItem('jumpSelectPrevious')}
               onMouseLeave={() => setHoveredItem('')}
@@ -1274,7 +1265,7 @@ const HEDEndorsement = ({
               onClick={() => {
                 const nextIndex = jsModulo(activeItemIndex + 1, totalHEDTags)
                 setActiveItemIndex(nextIndex);
-                jumpToEpoch(getItemEvent(getItemAtIndex(nextIndex)));
+                jumpToEvent(getItemEvent(getItemAtIndex(nextIndex)));
               }}
               style={{ marginLeft: '-1px', }}
               onMouseEnter={() => setHoveredItem('jumpSelectNext')}
@@ -1303,7 +1294,7 @@ const HEDEndorsement = ({
             marginBottom: 0,
           }}
         >
-          {filteredHEDEpochs.length === 0 &&
+          {filteredHEDEvents.length === 0 &&
             <div className='event-panel-message'>
               {t(
                 'There are no event-level HED tags to endorse.', {
@@ -1313,19 +1304,19 @@ const HEDEndorsement = ({
             </div>
           }
           {
-            filteredHEDEpochs.map((epoch, index) => {
-              return epoch.tagGroups.map((tagGroup) => {
+            filteredHEDEvents.map((hedEvent) => {
+              return hedEvent.tagGroups.map((tagGroup) => {
                 return {
-                  epoch: epoch.epoch,
-                  epochIndex: epoch.epochIndex,
+                  event: hedEvent.event,
+                  eventIndex: hedEvent.eventIndex,
                   tagGroup: tagGroup,
                 };
               }).flat()
-            }).flat().map((event, i) => {
-              const epoch = event.epoch;
+            }).flat().map((eventEntry, i) => {
+              const event = eventEntry.event;
               return (
                 <div
-                  key={event.tagGroup[0].ID}
+                  key={eventEntry.tagGroup[0].ID}
                   className={
                     'annotation list-group-item list-group-item-action container-fluid hed-endorsement-list'
                     + (activeItemIndex === i ? '-selected' : '')
@@ -1333,18 +1324,18 @@ const HEDEndorsement = ({
                   style={{
                     position: 'relative',
                   }}
-                  onMouseEnter={() => updateActiveEpoch(event.epochIndex)}
+                  onMouseEnter={() => updateActiveEvent(eventEntry.eventIndex)}
                   onMouseLeave={() => {
-                    const epochIndex = getEpochIndex(getActiveEvent());
-                    if (epochIndex && epochIndex !== activeEpoch) {
-                      updateActiveEpoch(epochIndex);
+                    const eventIndex = getEventIndex(getActiveEvent());
+                    if (eventIndex && eventIndex !== activeEvent) {
+                      updateActiveEvent(eventIndex);
                     } else {
-                      updateActiveEpoch(null);
+                      updateActiveEvent(null);
                     }
                   }}
                 >
                   <div
-                    className="row epoch-details"
+                    className="row event-details"
                     style={{
                       flexDirection: 'column',
                       paddingLeft: '15px',
@@ -1355,15 +1346,15 @@ const HEDEndorsement = ({
                       display: 'flex',
                       justifyContent: 'space-between',
                     }}>
-                      <div key={`epoch-label-${epoch.physiologicalTaskEventID}`}>
-                        [#{i + 1}] {epoch.label}
+                      <div key={`event-label-${event.physiologicalTaskEventID}`}>
+                        [#{i + 1}] {event.label}
                       </div>
                       <button
                         type="button"
                         className={'btn btn-xs btn-primary'}
                         onClick={() => {
                           setActiveItemIndex(i);
-                          jumpToEpoch(epoch);
+                          jumpToEvent(event);
                         }}
                         onMouseEnter={() => setHoveredItem(`jumpToSelected-${i}`)}
                         onMouseLeave={() => setHoveredItem('')}
@@ -1378,10 +1369,10 @@ const HEDEndorsement = ({
                       justifyContent: 'space-between',
                     }}>
                       <div>
-                        {Math.round(epoch.onset * 1000) / 1000}
-                        {epoch.duration > 0
+                        {Math.round(event.onset * 1000) / 1000}
+                        {event.duration > 0
                           && ' - '
-                          + (Math.round((epoch.onset + epoch.duration) * 1000) / 1000)
+                          + (Math.round((event.onset + event.duration) * 1000) / 1000)
                         }
                       </div>
                     </div>
@@ -1391,7 +1382,7 @@ const HEDEndorsement = ({
                       alignItems: 'center',
                     }}>
                       <span style={{ fontWeight: 'bold', }}>
-                        {buildHEDString(event.tagGroup, showLongFormHED)}
+                        {buildHEDString(eventEntry.tagGroup, showLongFormHED)}
                       </span>
                       {
                         <>
@@ -1462,7 +1453,7 @@ const HEDEndorsement = ({
                         type='button'
                         className='btn btn-xs btn-primary'
                         style={{ maxHeight: '22px', }}
-                        onClick={() => handleEditClick(epoch)}
+                        onClick={() => handleEditClick(event)}
                         onMouseEnter={() => setHoveredItem(`editSelected-${i}`)}
                         onMouseLeave={() => setHoveredItem('')}
                       >
@@ -1477,10 +1468,10 @@ const HEDEndorsement = ({
                       </button>
                     </div>
                     <Panel
-                      id={`tagged-by-panel-${event.tagGroup[0].ID}`}
-                      key={event.tagGroup[0].ID}
+                      id={`tagged-by-panel-${eventEntry.tagGroup[0].ID}`}
+                      key={eventEntry.tagGroup[0].ID}
                       class={'panel-primary tagged-by-panel' + (
-                        event.epochIndex === activeEpoch
+                        eventEntry.eventIndex === activeEvent
                           ? ' tagged-by-active'
                           : ''
                       )}
@@ -1492,7 +1483,7 @@ const HEDEndorsement = ({
                             }
                           )}:&nbsp;
                           {
-                            event.tagGroup
+                            eventEntry.tagGroup
                               .map(tag => tag.TaggerName)
                               .filter((tagger, index , taggers) => {
                                 return taggers.indexOf(tagger) === index; // unique list
@@ -1946,15 +1937,8 @@ HEDEndorsement.defaultProps = {};
 
 export default connect(
   (state: RootState)=> ({
-    epochs: state.dataset.epochs,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     physioFileID: state.dataset.physioFileID,
-  }),
-  (dispatch: (_: any) => void) => ({
-    setEpochs: R.compose(
-      dispatch,
-      setEpochs
-    ),
   })
 )(HEDEndorsement);

@@ -1,47 +1,47 @@
-import {Epoch, HEDSchemaElement, HEDTag} from '../types';
+import {SeriesEvent, HEDSchemaElement, HEDTag} from '../types';
 
 /**
- * getEpochsInRange
+ * getEventsInRange
  *
- * @param {Epoch[]} epochs - Array of epoch
+ * @param {SeriesEvent[]} events - Array of events
  * @param {[number, number]} interval - Time interval to search
- * @returns {Epoch[]} - Epoch[] in interval with epochType
+ * @returns {number[]} Indices of events in the interval
  */
-export const getEpochsInRange = (epochs, interval) => {
-  return [...Array(epochs.length).keys()].filter((index) =>
+export const getEventsInRange = (events, interval) => {
+  return [...Array(events.length).keys()].filter((index) =>
     (
-      (isNaN(epochs[index].onset) && interval[0] === 0)
+      (isNaN(events[index].onset) && interval[0] === 0)
       ||
       (
-        epochs[index].onset + epochs[index].duration > interval[0] &&
-        epochs[index].onset < interval[1]
+        events[index].onset + events[index].duration > interval[0] &&
+        events[index].onset < interval[1]
       )
     )
   );
 };
 
 /**
- * getTagsForEpoch
+ * getTagsForEvent
  *
- * @param {Epoch} epoch - An epoch
+ * @param {SeriesEvent} event - An event
  * @param {any[]} datasetTags - HED tags in the dataset
  * @param {HEDSchemaElement[]} hedSchema - HED schema to search
- * @returns {HEDTag[]} - List of HED tags within dataset associated with the epoch
+ * @returns {HEDTag[]} Dataset HED tags associated with the event
  */
-export const getTagsForEpoch = (
-  epoch: Epoch, datasetTags: any, hedSchema: HEDSchemaElement[]
+export const getTagsForEvent = (
+  event: SeriesEvent, datasetTags: any, hedSchema: HEDSchemaElement[]
 ) => {
   const hedTags = [];
 
-  // if (datasetTags['EventValue'].hasOwnProperty(epoch.label)) {
-  //   hedTags.push(...datasetTags['EventValue'][epoch.label])
+  // if (datasetTags['EventValue'].hasOwnProperty(event.label)) {
+  //   hedTags.push(...datasetTags['EventValue'][event.label])
   // }
 
-  if (datasetTags['trial_type'].hasOwnProperty(epoch.trialType)) {
-    hedTags.push(...datasetTags['trial_type'][epoch.trialType]);
+  if (datasetTags['trial_type'].hasOwnProperty(event.trialType)) {
+    hedTags.push(...datasetTags['trial_type'][event.trialType]);
   }
 
-  epoch.properties.forEach((prop) => {
+  event.properties.forEach((prop) => {
     if (datasetTags[prop.PropertyName].hasOwnProperty(prop.PropertyValue)) {
       hedTags.push(...datasetTags[prop.PropertyName][prop.PropertyValue]);
     }

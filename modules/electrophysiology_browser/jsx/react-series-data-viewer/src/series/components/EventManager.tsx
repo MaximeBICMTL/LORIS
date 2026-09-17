@@ -1,12 +1,12 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {MAX_RENDERED_EPOCHS} from '../../vector';
+import {MAX_RENDERED_EVENTS} from '../../vector';
 import {
   buildHEDString,
-  getEpochsInRange,
-  getTagsForEpoch,
-} from '../store/logic/filterEpochs';
+  getEventsInRange,
+  getTagsForEvent,
+} from '../store/logic/events';
 import {
-  Epoch as EpochType,
+  SeriesEvent,
   HEDTag,
   HEDSchemaElement,
   Channel
@@ -23,7 +23,6 @@ import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
 
 type CProps = {
-  epochs: EpochType[],
   viewerHeight: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
@@ -36,12 +35,12 @@ type CProps = {
 /**
  *
  * @param root0
- * @param root0.epochs
- * @param root0.filteredEpochs
+ * @param root0.events
+ * @param root0.filteredEvents
  * @param root0.setCurrentAnnotation
- * @param root0.toggleEpoch
- * @param root0.updateActiveEpoch
- * @param root0.setFilteredEpochs
+ * @param root0.toggleEvent
+ * @param root0.updateActiveEvent
+ * @param root0.setFilteredEvents
  * @param root0.viewerHeight
  * @param root0.hedSchema
  * @param root0.channelDelimiter
@@ -50,7 +49,6 @@ type CProps = {
  * @param root0.tagsHaveChanges
  */
 const EventManager = ({
-  epochs,
   viewerHeight,
   hedSchema,
   datasetTags,
@@ -61,10 +59,11 @@ const EventManager = ({
 }: CProps) => {
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
-    eventFilter: filteredEpochs,
-    setEventFilter: setFilteredEpochs,
-    setActiveEvent: updateActiveEpoch,
-    toggleEvent: toggleEpoch,
+    events,
+    eventFilter: filteredEvents,
+    setEventFilter: setFilteredEvents,
+    setActiveEvent: updateActiveEvent,
+    toggleEvent: toggleEvent,
   } = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
@@ -75,11 +74,11 @@ const EventManager = ({
   const {setTimeSelection} = useTimeSelection();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);
-  const [epochsInRange, setEpochsInRange] = useState(getEpochsInRange(epochs, interval));
-  const [allEpochsVisible, setAllEpochsVisibility] = useState(() => {
-    if (epochsInRange.length < MAX_RENDERED_EPOCHS) {
-      return epochsInRange.some((index) => {
-        return !filteredEpochs.plotVisibility.includes(index);
+  const [eventsInRange, setEventsInRange] = useState(getEventsInRange(events, interval));
+  const [allEventsVisible, setAllEventsVisibility] = useState(() => {
+    if (eventsInRange.length < MAX_RENDERED_EVENTS) {
+      return eventsInRange.some((index) => {
+        return !filteredEvents.plotVisibility.includes(index);
       })
     }
     return true;
@@ -90,24 +89,24 @@ const EventManager = ({
   const [activeLabel, setActiveLabel] = useState('trial_type');
   const [searchText, setSearchText] = useState('');
 
-  const getEpochLabels = (label) => {
+  const getEventLabels = (label) => {
     const labels = [];
-    epochs.forEach((epoch) => {
+    events.forEach((event) => {
       switch (label) {
         case 'trial_type':
-          labels.push(epoch.trialType ?? 'n/a');
+          labels.push(event.trialType ?? 'n/a');
           break;
         case 'HED':
           const hedTags = [
-            ...epoch.hed,
-            ...getTagsForEpoch(epoch, datasetTags, hedSchema),
+            ...event.hed,
+            ...getTagsForEvent(event, datasetTags, hedSchema),
           ];
           labels.push(hedTags.length > 0
             ? buildHEDString(hedTags).join(', ')
             : 'n/a');
           break;
         default:
-          labels.push(epoch.properties?.find(
+          labels.push(event.properties?.find(
             (prop) => prop.PropertyName === activeLabel
           )?.PropertyValue ?? 'n/a');
       }
@@ -115,7 +114,7 @@ const EventManager = ({
     return labels;
   }
 
-  const [activeLabels, setActiveLabels] = useState(getEpochLabels('trial_type'));
+  const [activeLabels, setActiveLabels] = useState(getEventLabels('trial_type'));
   const [ignoreNA, setIgnoreNA] = useState(false);
   const [invertSearchResults, setInvertSearchResults] = useState(false);
 
@@ -140,7 +139,7 @@ const EventManager = ({
   }, []);
 
   useEffect(() => {
-    setActiveLabels(getEpochLabels(activeLabel));
+    setActiveLabels(getEventLabels(activeLabel));
   }, [activeLabel]);
 
    useEffect(() => {
@@ -151,51 +150,51 @@ const EventManager = ({
 
   // Update window visibility state
   useEffect(() => {
-    setEpochsInRange(getEpochsInRange(epochs, interval));
-  }, [epochs, interval]);
+    setEventsInRange(getEventsInRange(events, interval));
+  }, [events, interval]);
 
   useEffect(() => {
-    if (epochsInRange.length > 0 && epochsInRange.length < MAX_RENDERED_EPOCHS) {
-      setAllEpochsVisibility(!epochsInRange.some((index) => {
-        return !filteredEpochs.plotVisibility.includes(index);
+    if (eventsInRange.length > 0 && eventsInRange.length < MAX_RENDERED_EVENTS) {
+      setAllEventsVisibility(!eventsInRange.some((index) => {
+        return !filteredEvents.plotVisibility.includes(index);
       }));  // If one or more event isn't visible, set to be able to reveal all
     } else {
-      setAllEpochsVisibility(false);
+      setAllEventsVisibility(false);
     }
 
-    if (epochsInRange.length > 0) {
-      setAllCommentsVisible(!epochsInRange.some((epochIndex) => {
-        return (epochs[epochIndex].properties.length > 0 || epochs[epochIndex].hed)
-          && !filteredEpochs.columnVisibility.includes(epochIndex);
+    if (eventsInRange.length > 0) {
+      setAllCommentsVisible(!eventsInRange.some((eventIndex) => {
+        return (events[eventIndex].properties.length > 0 || events[eventIndex].hed)
+          && !filteredEvents.columnVisibility.includes(eventIndex);
       }));
     } else {
       setAllCommentsVisible(false);
     }
-  }, [epochsInRange, filteredEpochs]);
+  }, [eventsInRange, filteredEvents]);
 
   useEffect(() => {
-    setFilteredEpochs((currentFilter) => ({
+    setFilteredEvents((currentFilter) => ({
       ...currentFilter,
-      searchVisibility: epochsInRange.filter(
-        (epochIndex) =>
-          indexVisibleBySearch(epochIndex)
+      searchVisibility: eventsInRange.filter(
+        (eventIndex) =>
+          indexVisibleBySearch(eventIndex)
       ),
     }));
-  }, [epochsInRange, searchText, ignoreNA, invertSearchResults, activeLabels, triggerUpdate]);
+  }, [eventsInRange, searchText, ignoreNA, invertSearchResults, activeLabels, triggerUpdate]);
 
   const setCommentsInRangeVisibility = (visible) => {
-    let commentIndices = [...filteredEpochs.columnVisibility];
-    epochsInRange.forEach((epochIndex) => {
-      if (epochs[epochIndex].properties.length > 0 || epochs[epochIndex].hed) {
-        if (visible && !filteredEpochs.columnVisibility.includes(epochIndex)) {
-          commentIndices.push(epochIndex);
-        } else if (!visible && filteredEpochs.columnVisibility.includes(epochIndex)) {
-          commentIndices = commentIndices.filter((value) => value !== epochIndex);
+    let commentIndices = [...filteredEvents.columnVisibility];
+    eventsInRange.forEach((eventIndex) => {
+      if (events[eventIndex].properties.length > 0 || events[eventIndex].hed) {
+        if (visible && !filteredEvents.columnVisibility.includes(eventIndex)) {
+          commentIndices.push(eventIndex);
+        } else if (!visible && filteredEvents.columnVisibility.includes(eventIndex)) {
+          commentIndices = commentIndices.filter((value) => value !== eventIndex);
         }
       }
     });
-    setFilteredEpochs({
-      ...filteredEpochs,
+    setFilteredEvents({
+      ...filteredEvents,
       columnVisibility: commentIndices
     });
   }
@@ -204,21 +203,21 @@ const EventManager = ({
    *
    * @param visible
    */
-  const setEpochsInViewVisibility = (visible) => {
-    if (epochsInRange.length < MAX_RENDERED_EPOCHS) {
-      epochsInRange.forEach((epochIndex) => {
-        if ((visible && !filteredEpochs.plotVisibility.includes(epochIndex))
-          || (!visible && filteredEpochs.plotVisibility.includes(epochIndex))) {
-          toggleEpoch(epochIndex);
+  const setEventsInViewVisibility = (visible) => {
+    if (eventsInRange.length < MAX_RENDERED_EVENTS) {
+      eventsInRange.forEach((eventIndex) => {
+        if ((visible && !filteredEvents.plotVisibility.includes(eventIndex))
+          || (!visible && filteredEvents.plotVisibility.includes(eventIndex))) {
+          toggleEvent(eventIndex);
         }
       });
     }
   }
 
-  const indexVisibleBySearch = (epochIndex) => {
-    const lowerCaseLabel = activeLabels[epochIndex]?.toLowerCase();
+  const indexVisibleBySearch = (eventIndex) => {
+    const lowerCaseLabel = activeLabels[eventIndex]?.toLowerCase();
     const lowerCaseSearchText = searchText.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');   // Escaped backslashes
-    if (epochIndex < activeLabels.length) {
+    if (eventIndex < activeLabels.length) {
       return (
         searchText.length === 0 ||
         (
@@ -229,7 +228,7 @@ const EventManager = ({
           lowerCaseLabel.search(lowerCaseSearchText) === -1
         )
       ) &&
-        !(ignoreNA && activeLabels[epochIndex] === 'n/a');
+        !(ignoreNA && activeLabels[eventIndex] === 'n/a');
     }
     return false;
   }
@@ -238,15 +237,15 @@ const EventManager = ({
     setSearchText(event.target.value)
   }
 
-  const jumpToEpoch = (epoch: EpochType) => {
-    const epochTimeRange = [
-      epoch.onset,
-      epoch.onset + Math.max(epoch.duration, 0.1)
+  const jumpToEvent = (event: SeriesEvent) => {
+    const eventTimeRange = [
+      event.onset,
+      event.onset + Math.max(event.duration, 0.1)
     ].sort((a, b) => a - b);
 
     setInterval([
-      Math.max(0, epochTimeRange[0] - 0.1),
-      Math.min(epochTimeRange[1], domain[1])
+      Math.max(0, eventTimeRange[0] - 0.1),
+      Math.min(eventTimeRange[1], domain[1])
     ]);
   };
 
@@ -276,11 +275,11 @@ const EventManager = ({
             {t(
               'showing {{numShowing}}/{{numTotal}}', {
                 ns: 'electrophysiology_browser',
-                numShowing: filteredEpochs
+                numShowing: filteredEvents
                   .searchVisibility
-                  .filter((i) => filteredEpochs.plotVisibility.includes(i))
+                  .filter((i) => filteredEvents.plotVisibility.includes(i))
                   .length,
-                numTotal: epochsInRange.length,
+                numTotal: eventsInRange.length,
               }
             )}
           </p>
@@ -289,18 +288,18 @@ const EventManager = ({
               className={
                 'glyphicon glyphicon-option-'
                 + (allCommentsVisible ? 'show' : 'show')
-                + (epochsInRange.length >= MAX_RENDERED_EPOCHS ? ' glyphicon-greyed' : '')}
+                + (eventsInRange.length >= MAX_RENDERED_EVENTS ? ' glyphicon-greyed' : '')}
               style={{cursor: 'pointer', paddingTop: '0.375em', paddingRight: '0.5em',}}
               onClick={() => setCommentsInRangeVisibility(!allCommentsVisible)}
             ></i>
             <i
               className={
                 'glyphicon glyphicon-eye-'
-                + (allEpochsVisible ? 'open' : 'close')
-                + (epochsInRange.length >= MAX_RENDERED_EPOCHS ? ' glyphicon-greyed' : '')
+                + (allEventsVisible ? 'open' : 'close')
+                + (eventsInRange.length >= MAX_RENDERED_EVENTS ? ' glyphicon-greyed' : '')
               }
               style={{cursor: 'pointer', padding: '0.5em'}}
-              onClick={() => setEpochsInViewVisibility(!allEpochsVisible)}
+              onClick={() => setEventsInViewVisibility(!allEventsVisible)}
             ></i>
           </div>
         </div>
@@ -309,7 +308,7 @@ const EventManager = ({
             {t(
               'Total events in recording {{total}}', {
                 ns: 'electrophysiology_browser',
-                total: epochs.length
+                total: events.length
               }
             )}
           </span>
@@ -449,7 +448,7 @@ const EventManager = ({
             marginBottom: 0,
           }}
         >
-          {epochsInRange.length >= MAX_RENDERED_EPOCHS &&
+          {eventsInRange.length >= MAX_RENDERED_EVENTS &&
             <div className='event-panel-message'>
               {t(
                 'Too many events to plot for this timeline range', {
@@ -458,7 +457,7 @@ const EventManager = ({
               )}
             </div>
           }
-          {epochsInRange.length === 0 &&
+          {eventsInRange.length === 0 &&
             <div className='event-panel-message'>
               {t('No events in timeline range.', {
                   ns: 'electrophysiology_browser'
@@ -472,29 +471,29 @@ const EventManager = ({
             </div>
           }
           {
-            // epochsInRange.length < MAX_RENDERED_EPOCHS &&
-            epochsInRange.map((epochIndex) => {
-              const epoch = epochs[epochIndex];
-              const epochVisible = filteredEpochs.plotVisibility.includes(epochIndex);
-              const hedVisible = filteredEpochs.columnVisibility.includes(epochIndex);
+            // eventsInRange.length < MAX_RENDERED_EVENTS &&
+            eventsInRange.map((eventIndex) => {
+              const event = events[eventIndex];
+              const eventVisible = filteredEvents.plotVisibility.includes(eventIndex);
+              const hedVisible = filteredEvents.columnVisibility.includes(eventIndex);
 
               /**
                *
                */
               const handleCommentVisibilityChange = () => {
                 if (!hedVisible) {
-                  setFilteredEpochs({
-                    ...filteredEpochs,
+                  setFilteredEvents({
+                    ...filteredEvents,
                     columnVisibility: [
-                      ...filteredEpochs.columnVisibility,
-                      epochIndex,
+                      ...filteredEvents.columnVisibility,
+                      eventIndex,
                     ]
                   });
                 } else {
-                  setFilteredEpochs({
-                    ...filteredEpochs,
-                    columnVisibility: filteredEpochs.columnVisibility.filter(
-                      (value) => value !== epochIndex
+                  setFilteredEvents({
+                    ...filteredEvents,
+                    columnVisibility: filteredEvents.columnVisibility.filter(
+                      (value) => value !== eventIndex
                     )
                   });
                 }
@@ -504,23 +503,23 @@ const EventManager = ({
                *
                */
               const handleEditClick = () => {
-                setCurrentAnnotation(epoch);
+                setCurrentAnnotation(event);
                 setRightPanel('annotationForm');
-                const startTime = epoch.onset;
-                const endTime = epoch.duration + startTime;
+                const startTime = event.onset;
+                const endTime = event.duration + startTime;
                 setTimeSelection([startTime, endTime]);
               };
               const channelNamesInView = channelMetadata.filter((_, index) => {
                 return channels.map((channel) => channel.index).includes(index)
               }).map(metadata => metadata.name);
 
-              return filteredEpochs.searchVisibility.includes(epochIndex) && (
+              return filteredEvents.searchVisibility.includes(eventIndex) && (
                 <div
-                  key={epochIndex}
+                  key={eventIndex}
                   className={
                     'list-group-item list-group-item-action container-fluid panel-event'
                     + (
-                      epoch.channels && epoch.channels.length > 0
+                      event.channels && event.channels.length > 0
                         ? '-channel-based'
                         : ''
                     )
@@ -528,40 +527,40 @@ const EventManager = ({
                   style={{
                     position: 'relative',
                   }}
-                  onMouseEnter={() => updateActiveEpoch(epochIndex)}
-                  onMouseLeave={() => updateActiveEpoch(null)}
+                  onMouseEnter={() => updateActiveEvent(eventIndex)}
+                  onMouseLeave={() => updateActiveEvent(null)}
                 >
                   <div
-                    className="row epoch-details"
+                    className="row event-details"
                   >
-                    <div className="epoch-label">
+                    <div className="event-label">
                       {
                         activeLabel === 'trial_type'
-                          ? epoch.trialType ?? 'n/a'
+                          ? event.trialType ?? 'n/a'
                           : activeLabel === 'HED'
                             ? [
-                                ...epoch.hed,
-                                ...getTagsForEpoch(epoch, datasetTags, hedSchema),
+                                ...event.hed,
+                                ...getTagsForEvent(event, datasetTags, hedSchema),
                               ].length > 0
                                 ? buildHEDString([
-                                    ...epoch.hed,
-                                    ...getTagsForEpoch(epoch, datasetTags, hedSchema),
+                                    ...event.hed,
+                                    ...getTagsForEvent(event, datasetTags, hedSchema),
                                   ]).join(', ')
                                 : 'n/a'
-                            : epoch.properties.find((prop) => prop.PropertyName === activeLabel)
+                            : event.properties.find((prop) => prop.PropertyName === activeLabel)
                               ?.PropertyValue ?? 'n/a'
                       }
                       <br/>
-                      {Math.round(epoch.onset * 1000) / 1000}
-                      {epoch.duration > 0
+                      {Math.round(event.onset * 1000) / 1000}
+                      {event.duration > 0
                         && ' - '
-                        + (Math.round((epoch.onset + epoch.duration) * 1000) / 1000)
+                        + (Math.round((event.onset + event.duration) * 1000) / 1000)
                       }
                       <br/>
                       {
-                        (epoch.channels.length === 0)
+                        (event.channels.length === 0)
                           ? ''  // 'All channels'
-                          : epoch.channels
+                          : event.channels
                             .sort((channelA, channelB) => {
                               return channelMetadata.findIndex(channel => channel.name === channelA)
                                 - channelMetadata.findIndex(channel => channel.name === channelB);
@@ -580,17 +579,17 @@ const EventManager = ({
                       }
                     </div>
                     <div
-                      className="epoch-action"
+                      className="event-action"
                     >
                       <button
                         type="button"
-                        className={(epochVisible ? '' : 'active ')
+                        className={(eventVisible ? '' : 'active ')
                           + 'btn btn-xs btn-primary'}
-                        onClick={() => toggleEpoch(epochIndex)}
+                        onClick={() => toggleEvent(eventIndex)}
                       >
                         <i className={
                           'glyphicon glyphicon-eye-'
-                          + (epochVisible ? 'open' : 'close')
+                          + (eventVisible ? 'open' : 'close')
                         }></i>
                       </button>
                       <button
@@ -598,7 +597,7 @@ const EventManager = ({
                         className={'btn btn-xs btn-primary'}
                         onClick={() => {
                           // setActiveItemIndex(i);
-                          jumpToEpoch(epoch);
+                          jumpToEvent(event);
                         }}
                         // onMouseEnter={() => setHoveredItem(`jumpToSelected-${i}`)}
                         // onMouseLeave={() => setHoveredItem('')}
@@ -610,10 +609,10 @@ const EventManager = ({
                       {
                         /*
                         (
-                          {epoch.properties.length > 0 ||
-                          epoch.hed.length > 0 ||
-                          getTagsForEpoch(epoch, datasetTags, hedSchema).length > 0 ||
-                          epoch.channels.length > 0
+                          {event.properties.length > 0 ||
+                          event.hed.length > 0 ||
+                          getTagsForEvent(event, datasetTags, hedSchema).length > 0 ||
+                          event.channels.length > 0
                         ) &&
                         */
                         (
@@ -630,7 +629,7 @@ const EventManager = ({
                         )
                       }
                       {
-                        epoch.type === 'Event' &&
+                        event.type === 'Event' &&
                         <button
                           type="button"
                           className={'btn btn-xs btn-primary'}
@@ -645,15 +644,15 @@ const EventManager = ({
                     </div>
                   </div>
                   {(hedVisible /*&& (
-                      epoch.properties.length > 0 ||
-                      epoch.hed ||
-                      epoch.channels.length > 0
+                      event.properties.length > 0 ||
+                      event.hed ||
+                      event.channels.length > 0
                     )*/
                   ) &&
-                    <div className="epoch-tag">
-                      {/*{epoch.channels.length > 0 &&*/}
+                    <div className="event-tag">
+                      {/*{event.channels.length > 0 &&*/}
                       {/*  <div><strong>Channel(s) </strong>*/}
-                      {/*    {epoch.channels.join(channelDelimiter)}*/}
+                      {/*    {event.channels.join(channelDelimiter)}*/}
                       {/*  </div>*/}
                       {/*}*/}
                       <div>
@@ -662,7 +661,7 @@ const EventManager = ({
                         </code>
                         &nbsp;
                         <span>
-                          {epoch.trialType}
+                          {event.trialType}
                         </span>
                       </div>
                       <div>
@@ -676,9 +675,9 @@ const EventManager = ({
                         &nbsp;
                         <span>
                           {
-                            epoch.channels.length > 0
-                              ? epoch.channels.map((channel, i) => {
-                                return <React.Fragment key={`epoch-channel-${channel}-${i}`}>
+                            event.channels.length > 0
+                              ? event.channels.map((channel, i) => {
+                                return <React.Fragment key={`event-channel-${channel}-${i}`}>
                                   {i > 0 && <>{channelDelimiter}&nbsp;</>}
                                   {channel}
                                 </React.Fragment>;
@@ -687,10 +686,10 @@ const EventManager = ({
                           }
                         </span>
                       </div>
-                      {epoch.properties.length > 0 &&
+                      {event.properties.length > 0 &&
                         <div><strong>Additional Columns </strong>
                           {
-                            epoch.properties.map((property) => {
+                            event.properties.map((property) => {
                               return <div>
                                 <code className='event-label'>
                                   {property.PropertyName}
@@ -708,13 +707,13 @@ const EventManager = ({
                         <div><strong>HED </strong>
                           {
                             [
-                              ...epoch.hed,
-                              ...getTagsForEpoch(epoch, datasetTags, hedSchema)
+                              ...event.hed,
+                              ...getTagsForEvent(event, datasetTags, hedSchema)
                             ].length > 0
                               ? (
                                 buildHEDString([
-                                  ...epoch.hed,
-                                  ...getTagsForEpoch(epoch, datasetTags, hedSchema),
+                                  ...event.hed,
+                                  ...getTagsForEvent(event, datasetTags, hedSchema),
                                 ]).join(', ')
                               )
                               : 'n/a'
@@ -736,7 +735,6 @@ EventManager.defaultProps = {};
 
 export default connect(
   (state: RootState)=> ({
-    epochs: state.dataset.epochs,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,

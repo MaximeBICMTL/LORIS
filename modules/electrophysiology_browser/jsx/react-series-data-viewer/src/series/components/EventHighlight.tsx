@@ -1,6 +1,6 @@
 import React, {useContext} from 'react';
 import {vec2} from 'gl-matrix';
-import {MIN_EPOCH_WIDTH} from '../../vector';
+import {MIN_EVENT_WIDTH} from '../../vector';
 import {ScaleLinear} from 'd3-scale';
 import {Channel} from "../store/types";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
@@ -17,7 +17,7 @@ type CProps = {
   color: string,
   opacity: number,
   minWidth: number,
-  epochChannels?: string[],
+  eventChannels?: string[],
   displayedChannels: Channel[],
 };
 
@@ -31,10 +31,10 @@ type CProps = {
  * @param root0.color
  * @param root0.opacity
  * @param root0.minWidth
- * @param root0.epochChannels
+ * @param root0.eventChannels
  * @param root0.displayedChannels
  */
-const Epoch = (
+const EventHighlight = (
   {
     key,
     parentHeight,
@@ -44,7 +44,7 @@ const Epoch = (
     color,
     opacity,
     minWidth,
-    epochChannels,
+    eventChannels,
     displayedChannels,
   }: CProps) => {
   const channelMetadata = useContext(ChannelMetasContext);
@@ -66,8 +66,8 @@ const Epoch = (
   const height = Math.abs(end[1] - start[1]);
   const center = (start[0] + end[0]) / 2;
 
-  if (epochChannels && epochChannels.length > 0) {
-    const indicesToDraw = epochChannels.map((channelName) => {
+  if (eventChannels && eventChannels.length > 0) {
+    const indicesToDraw = eventChannels.map((channelName) => {
       return displayedChannels.findIndex((channel) => {
         return channel.index === channelMetadata.findIndex((channel) => {
           return channel.name === channelName;
@@ -110,10 +110,10 @@ const Epoch = (
   );
 };
 
-Epoch.defaultProps = {
+EventHighlight.defaultProps = {
   color: '#dae5f2',
   opacity: 1,
-  minWidth: MIN_EPOCH_WIDTH,
+  minWidth: MIN_EVENT_WIDTH,
 };
 
-export default Epoch;
+export default EventHighlight;

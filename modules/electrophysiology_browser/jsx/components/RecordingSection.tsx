@@ -65,7 +65,7 @@ type RecordingDatabaseEntry = {
   datasetTags: DatasetTags;
   eegMontage?: string;
   electrodesURL?: Array<string | false | undefined>;
-  epochsURL?: string[];
+  eventsURL?: string[];
   events: RecordingEvents;
   file: RecordingFile;
   hedSchema: unknown;
@@ -105,7 +105,7 @@ function RecordingSection({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const {
     chunksURLs,
-    epochsURL,
+    eventsURL,
     events,
     hedSchema,
     datasetTags,
@@ -202,7 +202,7 @@ function RecordingSection({
               <EEGLabSeriesProvider
                 channelsURL={channelsURL}
                 chunksURL={currentChunksURL}
-                epochsURL={epochsURL}
+                eventsURL={eventsURL}
                 events={events}
                 electrodesURL={electrodesURL}
                 coordSystemURL={coordSystemURL}

@@ -16,18 +16,18 @@ import {connect} from 'react-redux';
 import {scaleLinear, ScaleLinear} from 'd3-scale';
 import {colorOrder} from '../../color';
 import {
-  MAX_RENDERED_EPOCHS,
+  MAX_RENDERED_EVENTS,
   DEFAULT_MAX_CHANNELS,
   DEFAULT_SIGNAL_UNIT,
   Vector2,
   DEFAULT_TIME_WINDOW,
   DEFAULT_VIEWER_HEIGHT,
-  MIN_EPOCH_WIDTH,
+  MIN_EVENT_WIDTH,
 } from '../../vector';
 import ResponsiveViewer from './ResponsiveViewer';
 import Axis from './Axis';
 import LineChunk from './LineChunk';
-import Epoch from './Epoch';
+import EventHighlight from './EventHighlight';
 import SeriesCursor from './SeriesCursor';
 import LoadingBar from './LoadingBar';
 import {setDatasetMetadata} from '../store/state/dataset';
@@ -44,10 +44,9 @@ import {
 } from './PassFilterSelect';
 import {
   Channel,
-  Epoch as EpochType,
   Trace,
 } from '../store/types';
-import {getEpochsInRange} from '../store/logic/filterEpochs';
+import {getEventsInRange} from '../store/logic/events';
 import HEDEndorsement from "./HEDEndorsement";
 import {useTranslation} from "react-i18next";
 import ChannelTypesSelector from './ChannelTypesSelector';
@@ -119,7 +118,6 @@ function compareChannelRangeDeps(a: ChannelRangeCacheDeps, b: ChannelRangeCacheD
 type CProps = {
   ref: MutableRefObject<any>,
   chunksURL: string,
-  epochs: EpochType[],
   setDatasetMetadata: (_: { limit: number }) => void,
   limit: number,
   physioFileID: number,
@@ -130,16 +128,16 @@ type CProps = {
  */
 const SeriesRenderer: FunctionComponent<CProps> = ({
   chunksURL,
-  epochs,
   setDatasetMetadata,
   limit,
   physioFileID,
 }) => {
     const {setCurrentAnnotation} = useCurrentAnnotation();
     const {
-      activeEvent: activeEpoch,
-      eventFilter: filteredEpochs,
-      setActiveEvent: updateActiveEpoch,
+      events,
+      activeEvent,
+      eventFilter,
+      setActiveEvent,
     } = useEvents();
     const setCursor = useSetCursor();
     const [viewerWidth, setViewerWidth] = useState(400);
@@ -305,7 +303,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
         if (result.value) {
           callbackFn();
           setPanelIsDirty(false);
-          updateActiveEpoch(null);
+          setActiveEvent(null);
           return true;
         } else {
           return false;
@@ -313,7 +311,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       });
     }
     callbackFn();
-    updateActiveEpoch(null);
+    setActiveEvent(null);
     return true;
   }
 
@@ -487,17 +485,17 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 
   useEffect(() => {
     setEventChannels(
-      activeEpoch !== null
-        ? epochs[activeEpoch]?.channels ?? []
+      activeEvent !== null
+        ? events[activeEvent]?.channels ?? []
         : []
     );
-  }, [activeEpoch]);
+  }, [activeEvent]);
 
   const firstRender = useRef(true);
   useEffect(() => {
     if (rightPanel !== 'annotationForm') {
       if (!firstRender.current) {
-        updateActiveEpoch(null);
+        setActiveEvent(null);
       } else {
         firstRender.current = false;
       }
@@ -619,47 +617,47 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     );
   };
 
-  const EpochsLayer = () => {
-    const visibleEpochs = rightPanel ? getEpochsInRange(epochs, interval) : [];
-    const minEpochWidth = (
+  const EventsLayer = () => {
+    const visibleEvents = rightPanel ? getEventsInRange(events, interval) : [];
+    const minEventWidth = (
       (interval[1] - interval[0])
-      * MIN_EPOCH_WIDTH
+      * MIN_EVENT_WIDTH
       / DEFAULT_TIME_WINDOW[1]
     );
 
     return (
       <Group>
         {
-         visibleEpochs.length < MAX_RENDERED_EPOCHS &&
-          visibleEpochs.sort((a, b) => {
-              return epochs[a]?.channels.length === 0
+         visibleEvents.length < MAX_RENDERED_EVENTS &&
+          visibleEvents.sort((a, b) => {
+              return events[a]?.channels.length === 0
                 ? -1
                 : 1;
             }).map((index) => {
-            return filteredEpochs.plotVisibility.includes(index) &&
-              filteredEpochs.searchVisibility.includes(index) &&  (
-              <Epoch
-                key={`epoch-${index}`}
-                {...epochs[index]}
+            return eventFilter.plotVisibility.includes(index) &&
+              eventFilter.searchVisibility.includes(index) &&  (
+              <EventHighlight
+                key={`event-${index}`}
+                {...events[index]}
                 displayedChannels={channels}
                 parentHeight={viewerHeight}
                 color={
-                  epochs[index]?.channels &&
-                  epochs[index]?.channels.length > 0
+                  events[index]?.channels &&
+                  events[index]?.channels.length > 0
                     ? '#7ef1de'
                     : '#a6d5f2'
                 }
                 scales={scales}
                 opacity={0.7}
-                minWidth={minEpochWidth}
-                epochChannels={epochs[index]?.channels}
+                minWidth={minEventWidth}
+                eventChannels={events[index]?.channels}
               />
             );
           })
         }
-        {timeSelection && activeEpoch === null &&
-          <Epoch
-            key={`epoch-${activeEpoch}`}
+        {timeSelection && activeEvent === null &&
+          <EventHighlight
+            key={`event-${activeEvent}`}
             displayedChannels={channels}
             onset={Math.min(timeSelection[0], timeSelection[1])}
             duration={Math.abs(timeSelection[1] - timeSelection[0])}
@@ -667,23 +665,23 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
             parentHeight={viewerHeight}
             scales={scales}
             opacity={0.7}
-            epochChannels={
-              activeEpoch
-                ? epochs[activeEpoch]?.channels ?? []
+            eventChannels={
+              activeEvent
+                ? events[activeEvent]?.channels ?? []
                 : eventChannels
             }
           />
         }
-        {activeEpoch !== null &&
-          <Epoch
-            key={`epoch-${activeEpoch}`}
-            {...epochs[activeEpoch]}
+        {activeEvent !== null &&
+          <EventHighlight
+            key={`event-${activeEvent}`}
+            {...events[activeEvent]}
             displayedChannels={channels}
             parentHeight={viewerHeight}
             scales={scales}
             color={'#fff9d6'}
-            minWidth={minEpochWidth}
-            epochChannels={eventChannels}
+            minWidth={minEventWidth}
+            eventChannels={eventChannels}
           />
         }
       </Group>
@@ -1278,7 +1276,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                           channelMetadata[channel.index] &&
                           eventChannels.includes(channelMetadata[channel.index].name)
                         )
-                          ? (activeEpoch === null && rightPanel === 'annotationForm')
+                          ? (activeEvent === null && rightPanel === 'annotationForm')
                             ? '#ff9585'
                             : '#fff9d6'
                           : 'unset',
@@ -1349,7 +1347,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                       cssClass={''}
                       domain={domain}
                     >
-                      <EpochsLayer/>
+                      <EventsLayer/>
                       <ChannelsLayer
                         viewerWidth={0}
                       />
@@ -1573,7 +1571,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 };
 
 SeriesRenderer.defaultProps = {
-  epochs: [],
   limit: DEFAULT_MAX_CHANNELS,
 };
 
@@ -1671,7 +1668,6 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): Float3
 export default connect(
   (state: RootState)=> ({
     chunksURL: state.dataset.chunksURL,
-    epochs: state.dataset.epochs,
     limit: state.dataset.limit,
     physioFileID: state.dataset.physioFileID,
   }),

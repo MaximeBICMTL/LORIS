@@ -130,7 +130,7 @@ class ElectrophysiologySessionView extends Component {
             ],
           },
           chunksURL: null,
-          epochsURL: null,
+          eventsURL: null,
           electrodesURL: null,
           coordSystemURL: null,
           events: null,
@@ -193,12 +193,12 @@ class ElectrophysiologySessionView extends Component {
                 + '/electrophysiology_browser/file_reader/?file='
                 + url
             ),
-        epochsURL:
+        eventsURL:
             dbEntry
-            && dbEntry.file?.epochsURL
+            && dbEntry.file?.eventsURL
             && [loris.BaseURL
               + '/electrophysiology_browser/file_reader/?file='
-              + dbEntry.file.epochsURL],
+              + dbEntry.file.eventsURL],
         electrodesURL:
             dbEntry
             && dbEntry.file.downloads.map(

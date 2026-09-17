@@ -1,12 +1,10 @@
 import * as R from 'ramda';
 import {bisector} from 'd3-array';
 import {colorOrder} from '../../color';
-import {Channel, ChannelMetadata, Epoch} from '../store/types';
-import {connect} from 'react-redux';
-import {MAX_RENDERED_EPOCHS} from '../../vector';
-import {MutableRefObject, useContext, useEffect} from 'react';
-import {RootState} from '../store';
-import {getEpochsInRange} from '../store/logic/filterEpochs';
+import {Channel, ChannelMetadata} from '../store/types';
+import {MAX_RENDERED_EVENTS} from '../../vector';
+import {MutableRefObject, useContext} from 'react';
+import {getEventsInRange} from '../store/logic/events';
 import {useTranslation} from "react-i18next";
 import {getChannelUnit, useChannelInfo} from '../store/logic/channels';
 import {normalizeUnit, normalizeValueUnit} from '../../utils';
@@ -25,7 +23,6 @@ type CursorContentProps = {
 type CProps = {
   cursorRef: MutableRefObject<any>,
   channels: Channel[],
-  epochs: Epoch[],
   CursorContent: (_: CursorContentProps) => JSX.Element,
   interval: [number, number],
   showEvents: boolean,
@@ -38,8 +35,7 @@ type CProps = {
  * @param root0
  * @param root0.cursorRef
  * @param root0.channels
- * @param root0.epochs
- * @param root0.filteredEpochs
+ * Events and their visibility are read from EventContext.
  * @param root0.CursorContent
  * @param root0.interval
  * @param root0.showEvents
@@ -50,7 +46,6 @@ const SeriesCursor = (
   {
     cursorRef,
     channels,
-    epochs,
     CursorContent,
     interval,
     showEvents,
@@ -60,11 +55,10 @@ const SeriesCursor = (
 ) => {
   const {t} = useTranslation();
   const cursorPosition = useCursorPosition();
-  const {eventFilter: {plotVisibility: filteredEpochs}} = useEvents();
-  let reversedEpochs = [...filteredEpochs].reverse();
-  useEffect(() => {
-    reversedEpochs = [...filteredEpochs].reverse();
-  }, [filteredEpochs]);
+  const {
+    events,
+    eventFilter: {plotVisibility: visibleEventIndices},
+  } = useEvents();
   const left = cursorPosition ? (Math.min(Math.max(100 * cursorPosition[0], 0), 100) + '%') : 0;
   const time = cursorPosition ? (interval[0] + cursorPosition[0] * (interval[1] - interval[0])) : 0;
 
@@ -172,7 +166,7 @@ const SeriesCursor = (
           );
         })}
       </div>
-      {showEvents && <EpochMarker />}
+      {showEvents && <EventMarker />}
     </div>
   );
 
@@ -180,19 +174,19 @@ const SeriesCursor = (
   /**
    *
    */
-  const EpochMarker = () => {
-    const visibleEpochs = getEpochsInRange(epochs, interval);
-    if (visibleEpochs
-      .filter((index) => { filteredEpochs.includes(index) })
-      .length > MAX_RENDERED_EPOCHS
+  const EventMarker = () => {
+    const eventsInRange = getEventsInRange(events, interval);
+    if (eventsInRange
+      .filter((index) => { visibleEventIndices.includes(index) })
+      .length > MAX_RENDERED_EVENTS
     ) {
       return null;
     }
 
-    const indices = visibleEpochs.filter((index) =>
-      filteredEpochs.includes(index) &&
-      epochs[index].onset <= time &&
-      (epochs[index].onset + Math.max(epochs[index].duration, 1)) >= time
+    const indices = eventsInRange.filter((index) =>
+      visibleEventIndices.includes(index) &&
+      events[index].onset <= time &&
+      (events[index].onset + Math.max(events[index].duration, 1)) >= time
     );
 
     const hoveredChannelNames = hoveredChannels.map((channelIndex) => {
@@ -207,16 +201,16 @@ const SeriesCursor = (
               key={`hovered-channel-${index}-${i}`}
               style={{
               fontWeight: (
-                (epochs[index].channels.length === 0) ||
+                (events[index].channels.length === 0) ||
                 hoveredChannelNames.some((hoveredChannel) => {
-                  return epochs[index].channels.includes(hoveredChannel);
+                  return events[index].channels.includes(hoveredChannel);
                 })
               )
                 ? 'bold'
                 : 'normal'
             }}>
               {i > 0 && ', '}
-              {epochs[index].label}
+              {events[index].label}
             </span>
           })
         }
@@ -323,14 +317,9 @@ const CursorContent = (
 
 SeriesCursor.defaultProps = {
   channels: [],
-  epochs: [],
   CursorContent,
   showEvents: false,
   enabled: false,
 };
 
-export default connect(
-  (state: RootState)=> ({
-    epochs: state.dataset.epochs,
-  })
-)(SeriesCursor);
+export default SeriesCursor;

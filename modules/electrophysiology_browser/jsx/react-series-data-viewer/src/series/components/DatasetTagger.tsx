@@ -7,7 +7,7 @@ import Panel from './Panel'; // Different from jsx/Panel
 import {HEDSchemaElement, HEDTag} from "../store/types";
 import {setAddedTags, setDatasetTags, setDeletedTags, setRelOverrides, setDatasetMetadata} from "../store/state/dataset";
 import swal from "sweetalert2";
-import {buildHEDString, getNthMemberTrailingBadgeIndex, getRootTags} from "../store/logic/filterEpochs";
+import {buildHEDString, getNthMemberTrailingBadgeIndex, getRootTags} from "../store/logic/events";
 import {colorOrder} from "../../color";
 import {Trans, useTranslation} from "react-i18next";
 

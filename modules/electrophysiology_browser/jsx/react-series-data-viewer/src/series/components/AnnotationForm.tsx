@@ -1,13 +1,11 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {ChannelMetadata, Epoch as EpochType, HEDSchemaElement, HEDTag,} from '../store/types';
+import {ChannelMetadata, SeriesEvent, HEDSchemaElement, HEDTag,} from '../store/types';
 import {connect} from 'react-redux';
-import * as R from 'ramda';
 import {
   getNthMemberTrailingBadgeIndex,
-  getTagsForEpoch,
-} from '../store/logic/filterEpochs';
+  getTagsForEvent,
+} from '../store/logic/events';
 import {RootState} from '../store';
-import {setEpochs} from '../store/state/dataset';
 import {NumericElement, SelectElement, TextboxElement} from './Form';
 import Panel from './Panel';
 import Modal from 'jsx/Modal';
@@ -25,8 +23,6 @@ import {useEvents} from '../contexts/EventContext';
 
 
 type CProps = {
-  epochs: EpochType[],
-  setEpochs: (_: EpochType[]) => void,
   physioFileID: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
@@ -40,13 +36,9 @@ type CProps = {
 /**
  *
  * @param root0
- * @param root0.epochs
- * @param root0.setEpochs
  * @param root0.currentAnnotation
  * @param root0.setCurrentAnnotation
  * @param root0.physioFileID
- * @param root0.toggleEpoch,
- * @param root0.updateActiveEpoch,
  * @param root0.hedSchema
  * @param root0.datasetTags
  * @param root0.channelDelimiter
@@ -56,8 +48,6 @@ type CProps = {
  * @param root0.setEventChannels
  */
 const AnnotationForm = ({
-  epochs,
-  setEpochs,
   physioFileID,
   hedSchema,
   datasetTags,
@@ -68,7 +58,11 @@ const AnnotationForm = ({
   setEventChannels,
 }: CProps) => {
   const {currentAnnotation, setCurrentAnnotation} = useCurrentAnnotation();
-  const {setActiveEvent} = useEvents();
+  const {
+    events,
+    setEvents,
+    setActiveEvent,
+  } = useEvents();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -519,15 +513,15 @@ const AnnotationForm = ({
         }
       });
 
-      const epochLabel = [null, 'n/a'].includes(data.instance.TrialType)
+      const eventLabel = [null, 'n/a'].includes(data.instance.TrialType)
         ? null
         : data.instance.TrialType;
 
-      const newAnnotation : EpochType = {
+      const newAnnotation : SeriesEvent = {
         onset: parseFloat(data.instance.Onset),
         duration: parseFloat(data.instance.Duration),
         type: 'Event',
-        label: epochLabel ?? data.instance.EventValue,
+        label: eventLabel ?? data.instance.EventValue,
         value: data.instance.EventValue,
         trialType: data.instance.TrialType,
         properties: data.extra_columns,
@@ -540,21 +534,20 @@ const AnnotationForm = ({
 
 
       // Maintain index
+      let savedEventIndex;
       if (currentAnnotation !== null) {
-        const eventIndex = epochs.indexOf(currentAnnotation);
-        setEpochs([
-          ...epochs.slice(0, eventIndex),
+        savedEventIndex = events.indexOf(currentAnnotation);
+        setEvents([
+          ...events.slice(0, savedEventIndex),
           newAnnotation,
-          ...epochs.slice(eventIndex + 1),
+          ...events.slice(savedEventIndex + 1),
         ]);
       } else {
-        epochs.push(newAnnotation);
-        setEpochs(
-          epochs
-            .sort(function(a, b) {
-              return a.onset - b.onset;
-            })
+        const nextEvents = [...events, newAnnotation].sort(
+          (a, b) => a.onset - b.onset
         );
+        savedEventIndex = nextEvents.indexOf(newAnnotation);
+        setEvents(nextEvents);
       }
 
       // Display success message
@@ -574,7 +567,7 @@ const AnnotationForm = ({
 
       setTimeout(() => {
         setAnnoMessage(''); // Empty string will cause success div to hide
-        setActiveEvent(epochs.indexOf(currentAnnotation ? currentAnnotation : newAnnotation));
+        setActiveEvent(savedEventIndex);
       }, 2000);
     }).catch((error) => {
       console.error(error);
@@ -634,13 +627,7 @@ const AnnotationForm = ({
             if (response.ok) {
               setIsDeleted(false);
 
-              epochs.splice(epochs.indexOf(currentAnnotation), 1);
-              setEpochs(
-                epochs
-                  .sort(function(a, b) {
-                    return a.onset - b.onset;
-                  })
-              );
+              setEvents(events.filter((event) => event !== currentAnnotation));
 
               // Reset Form
               handleReset();
@@ -1352,7 +1339,7 @@ const AnnotationForm = ({
               {
                 currentAnnotation && currentAnnotation.hed && (
                   currentAnnotation.hed.some(hedTag => hedTag.TaggerName !==  'Data Authors') ||
-                  getTagsForEpoch(currentAnnotation, datasetTags, hedSchema)
+                  getTagsForEvent(currentAnnotation, datasetTags, hedSchema)
                     .some(hedTag => hedTag.TaggerName !==  'Data Authors')
                 ) && (
                   <>
@@ -1370,7 +1357,7 @@ const AnnotationForm = ({
             }}>
               {
                 currentAnnotation && currentAnnotation.hed &&
-                getTagsForEpoch(currentAnnotation, datasetTags, hedSchema).length > 0 && (
+                getTagsForEvent(currentAnnotation, datasetTags, hedSchema).length > 0 && (
                   <>
                     <div style={{clear: 'both'}}>
                       {t('Dataset', {
@@ -1380,7 +1367,7 @@ const AnnotationForm = ({
                     </div>
                     {
                       buildHEDBadges(
-                        getTagsForEpoch(currentAnnotation, datasetTags, hedSchema),
+                        getTagsForEvent(currentAnnotation, datasetTags, hedSchema),
                         false,
                       ).map((badge) => {
                         return badge;
@@ -1599,22 +1586,14 @@ const AnnotationForm = ({
 };
 
 AnnotationForm.defaultProps = {
-  epochs: [],
   hedSchema: [],
 };
 
 export default connect(
   (state: RootState)=> ({
     physioFileID: state.dataset.physioFileID,
-    epochs: state.dataset.epochs,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
-  }),
-  (dispatch: (any) => void) => ({
-    setEpochs: R.compose(
-      dispatch,
-      setEpochs
-    ),
   })
 )(AnnotationForm);

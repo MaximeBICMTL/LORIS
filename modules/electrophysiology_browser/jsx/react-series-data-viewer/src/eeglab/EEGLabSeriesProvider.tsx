@@ -17,7 +17,6 @@ import {
 import {
   setDatasetMetadata,
   setDatasetTags,
-  setEpochs,
   setHedSchemaDocument,
   setPhysioFileID,
 } from '../series/store/state/dataset';
@@ -44,7 +43,7 @@ declare global {
 type CProps = {
   channelsURL: string,
   chunksURL: string,
-  epochsURL: string,
+  eventsURL: string,
   electrodesURL: string,
   coordSystemURL: string,
   megSensorsURL?: string,
@@ -267,6 +266,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
     this.state = {
       activeMenuOption: 'TAG_MODE',
       datasetTaggerTabsRef: createRef(),
+      events: [],
     };
 
     const {
@@ -385,7 +385,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
         }
       }
     ).then(() => {
-      const epochs = [];
+      const parsedEvents = [];
       const channelDelimiter = events['channel_delimiter'].length > 0
         ? events['channel_delimiter']
         : DEFAULT_CHANNEL_DELIMITER;
@@ -394,7 +394,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       );
 
       events.instances.map((instance) => {
-        const epochIndex = epochs.findIndex(
+        const eventIndex = parsedEvents.findIndex(
           (e) => e.physiologicalTaskEventID
             === instance.PhysiologicalTaskEventID
         );
@@ -454,15 +454,15 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
           };
         });
 
-        if (epochIndex === -1) {
-          const epochLabel = [null, 'n/a'].includes(instance.TrialType)
+        if (eventIndex === -1) {
+          const eventLabel = [null, 'n/a'].includes(instance.TrialType)
             ? null
             : instance.TrialType;
-          epochs.push({
+          parsedEvents.push({
             onset: parseFloat(instance.Onset),
             duration: parseFloat(instance.Duration),
             type: 'Event',
-            label: epochLabel ?? instance.EventValue,
+            label: eventLabel ?? instance.EventValue,
             value: instance.EventValue,
             trialType: instance.TrialType,
             properties: extraColumns,
@@ -475,18 +475,18 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             physiologicalTaskEventID: instance.PhysiologicalTaskEventID,
           });
         } else {
-          console.error('ERROR: EPOCH EXISTS');
+          console.error('ERROR: EVENT EXISTS');
         }
       });
-      return epochs;
-    }).then((epochs) => {
-      const sortedEpochs = epochs
+      return parsedEvents;
+    }).then((parsedEvents) => {
+      const sortedEvents = parsedEvents
         .flat()
         .sort(function(a, b) {
           return a.onset - b.onset;
         });
 
-      this.store.dispatch(setEpochs(sortedEpochs));
+      this.setState({events: sortedEvents});
     });
   }
 
@@ -507,7 +507,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
 
     return (
       <Provider store={this.store}>
-        <ViewerStateProviders>
+        <ViewerStateProviders events={this.state.events}>
             <div id='tag-modal-container'>
             <TriggerableModal
               title={

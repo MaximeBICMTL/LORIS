@@ -24,7 +24,7 @@ export type Channel = {
   traces: Trace[]
 };
 
-export type Epoch = {
+export type SeriesEvent = {
   onset: number,
   duration: number,
   type: 'Event',
@@ -37,7 +37,7 @@ export type Epoch = {
   physiologicalTaskEventID?: number,
 };
 
-export type EpochFilter = {
+export type EventFilter = {
   plotVisibility: number[],
   columnVisibility: number[],
   searchVisibility: number[],

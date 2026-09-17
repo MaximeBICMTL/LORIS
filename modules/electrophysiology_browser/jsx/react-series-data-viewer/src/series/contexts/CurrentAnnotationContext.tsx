@@ -5,11 +5,11 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {Epoch} from '../store/types';
+import {SeriesEvent} from '../store/types';
 
 type CurrentAnnotationContextValue = {
-  currentAnnotation: Epoch | null,
-  setCurrentAnnotation: React.Dispatch<React.SetStateAction<Epoch | null>>,
+  currentAnnotation: SeriesEvent | null,
+  setCurrentAnnotation: React.Dispatch<React.SetStateAction<SeriesEvent | null>>,
 };
 
 const CurrentAnnotationContext =
@@ -18,7 +18,7 @@ const CurrentAnnotationContext =
 export const CurrentAnnotationProvider: FunctionComponent<{
   children: React.ReactNode,
 }> = ({children}) => {
-  const [currentAnnotation, setCurrentAnnotation] = useState<Epoch | null>(null);
+  const [currentAnnotation, setCurrentAnnotation] = useState<SeriesEvent | null>(null);
   const value = useMemo(() => ({
     currentAnnotation,
     setCurrentAnnotation,
