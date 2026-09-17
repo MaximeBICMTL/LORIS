@@ -8,7 +8,7 @@
 export const fetchBlob = (url: string, params?: RequestInit) : Promise<Blob> =>
   fetch(url, params).then((response) => {
     if (!response.ok) {
-      return Promise.resolve(null) as Promise<Blob>;
+      throw new Error(`Request failed with status ${response.status}: ${url}`);
     }
     return response.blob().then((data) => data);
   });
@@ -23,7 +23,7 @@ export const fetchBlob = (url: string, params?: RequestInit) : Promise<Blob> =>
 export const fetchJSON = (url: string, params?: RequestInit) =>
   fetch(url, params).then((response) => {
     if (!response.ok) {
-      return Promise.resolve(null) as Promise<any>;
+      throw new Error(`Request failed with status ${response.status}: ${url}`);
     }
     return response.json().then((data) => data);
   });
@@ -38,7 +38,7 @@ export const fetchJSON = (url: string, params?: RequestInit) =>
 export const fetchText = (url: string, params?: RequestInit) =>
   fetch(url, params).then((response) => {
     if (!response.ok) {
-      return Promise.resolve(null) as Promise<string>;
+      throw new Error(`Request failed with status ${response.status}: ${url}`);
     }
     return response.text().then((data) => data);
   });

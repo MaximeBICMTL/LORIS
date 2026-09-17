@@ -112,7 +112,7 @@ function Montage({
     );
   }, [sensors]);
 
-  const scatter2D = [];
+  const scatter2D: {x: number, y: number}[] = [];
 
   /**
    * Compute the stereographic projection.
@@ -131,7 +131,9 @@ function Montage({
    *
    * @return {number[]} : x, y positions of sensors as projected onto a unit circle.
    */
-  const stereographicProjection = (x, y, z, scale=1.0) => {
+  const stereographicProjection = (
+    x: number, y: number, z: number, scale = 1.0
+  ) => {
     const mu = 1.0 / (scale + z);
     return [x * mu, y * mu];
   };
@@ -139,7 +141,7 @@ function Montage({
   /**
    * Get the 2D unit multiplier.
    */
-  const get2DMultiplier = (unit: string) => {
+  const get2DMultiplier = (unit: string | undefined) => {
     switch (unit) {
     case 'cm':
       return 0.07;
@@ -158,7 +160,7 @@ function Montage({
    * @param {number[][]} points - an array of nD points
    * @return {[number, number]} : a pair of lower and upper bounds
    */
-  const boundingBox = (points) => {
+  const boundingBox = (points: number[][]): number[][] => {
     if (points.length === 0) {
       return [];
     }

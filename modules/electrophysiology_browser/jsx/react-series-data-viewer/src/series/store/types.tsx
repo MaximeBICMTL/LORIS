@@ -24,6 +24,14 @@ export type Channel = {
   traces: Trace[]
 };
 
+/**
+ * Extra column of an event, as provided by the LORIS events API.
+ */
+export type EventProperty = {
+  PropertyName: string,
+  PropertyValue: string,
+};
+
 export type SeriesEvent = {
   onset: number,
   duration: number,
@@ -31,8 +39,8 @@ export type SeriesEvent = {
   label: string,
   value: string,
   trialType: string,
-  properties?: any[],
-  hed?: HEDTag[],
+  properties: EventProperty[],
+  hed: HEDTag[],
   channels: string[],
   physiologicalTaskEventID?: number,
 };
@@ -43,13 +51,22 @@ export type EventFilter = {
   searchVisibility: number[],
 }
 
+/* The fields below are the raw keys of the LORIS events API response. */
+/* eslint-disable camelcase */
 export type EventMetadata = {
-  instances: any[],
-  extraColumns: any[],
-  hedTags: any[],
-  hedEndorsements: any[],
-  channelDelimiter: string,
+  instances: Record<string, any>[],
+  /*
+   * Not necessarily an array: the events API serialises this field straight
+   * from a LORIS `Query` object, which has no public properties and therefore
+   * encodes as `{}`. See ElectrophysioEvents::__construct.
+   */
+  extra_columns:
+    (EventProperty & Record<string, any>)[] | Record<string, never>,
+  hed_tags: Record<string, any>[],
+  hed_endorsements: Record<string, any>[],
+  channel_delimiter: string,
 }
+/* eslint-enable camelcase */
 
 export type CoordinateSystem = {
   name: string | 'Other',
@@ -68,7 +85,7 @@ export type Sensor = {
 
 export type HEDSchemaElement = {
   id: number,
-  parentID: number,
+  parentID: number | null,
   schemaID: number,
   name: string,
   longName: string,
@@ -95,7 +112,7 @@ export type HEDTag = {
   AdditionalMembers: number,
   TaggedBy: number | null,
   TaggerName: string | null,
-  Endorsements?: HEDEndorsement[],
+  Endorsements: HEDEndorsement[],
 };
 
 export type HEDEndorsement = {

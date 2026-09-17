@@ -57,7 +57,7 @@ function ChannelsEditor({
     });
   };
 
-  let infoMessageTimeout: NodeJS.Timeout | null = null;
+  let infoMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Set the information message displayed in the footer.

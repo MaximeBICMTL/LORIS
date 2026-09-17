@@ -1,7 +1,14 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {ChannelMetadata, SeriesEvent, HEDSchemaElement, HEDTag,} from '../store/types';
+import {
+  ChannelMetadata,
+  HEDEndorsement,
+  HEDSchemaElement,
+  HEDTag,
+  SeriesEvent,
+} from '../store/types';
 import {
   getNthMemberTrailingBadgeIndex,
+  getSchemaElementName,
   getTagsForEvent,
 } from '../store/logic/events';
 import {NumericElement, SelectElement, TextboxElement} from './Form';
@@ -26,7 +33,21 @@ type CProps = {
   panelIsDirty: boolean,
   setPanelIsDirty: (_: boolean) => void,
   eventChannels: string[],
-  setEventChannels: (_: string[] ) => void,
+  setEventChannels: React.Dispatch<React.SetStateAction<string[]>>,
+};
+
+type HEDTagOption = {
+  HEDTagID: number,
+  label: string,
+  longName: string,
+  value: number,
+  optgroup: string,
+  Description: string,
+};
+
+type PendingTag = {
+  type: string,
+  value: string,
 };
 
 /**
@@ -68,18 +89,18 @@ const AnnotationForm = ({
   const [eventInterval, setEventInterval] = useState<(number | string)[]>(
     timeSelection ?? ['', '']
   );
-  const [label, setLabel] = useState(
+  const [label, setLabel] = useState<string | null>(
     currentAnnotation ?
     currentAnnotation.label :
     null
   );
 
-  const [eventProperties, setEventProperties] = useState({});
+  const [eventProperties, setEventProperties] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [annoMessage, setAnnoMessage] = useState('');
-  const [newTags, setNewTags] = useState([]);
-  const [deletedTagIDs, setDeletedTagIDs] = useState([]);
+  const [newTags, setNewTags] = useState<PendingTag[]>([]);
+  const [deletedTagIDs, setDeletedTagIDs] = useState<Array<string | number>>([]);
 
   const [throwChannelEditWarning, setThrowChannelEditWarning] = useState(false);
   const [channelSelectorVisible, setChannelSelectorVisible] = useState(false);
@@ -88,9 +109,11 @@ const AnnotationForm = ({
    setEventProperties(
      Object.keys(datasetTags)
        .filter(column => column !== 'trial_type')
-       .reduce((properties, column) => {
-         const property = currentAnnotation?.properties.find(prop => prop.PropertyName === column);
-         properties[column] = property ? property.PropertyValue : '';
+       .reduce<Record<string, string>>((properties, column) => {
+         const property = currentAnnotation?.properties.find(
+           prop => prop.PropertyName === column
+         );
+         properties[column] = property ? String(property.PropertyValue) : '';
          return properties;
        }, {})
    );
@@ -109,7 +132,7 @@ const AnnotationForm = ({
   useEffect(() => {
     setPanelIsDirty(
       (deletedTagIDs.length > 0 ||
-        (newTags.length > 0 && newTags.find((tag) => tag.value !== '')) ||
+        (newTags.length > 0 && newTags.some((tag) => tag.value !== '')) ||
         JSON.stringify(eventChannels) !==
         JSON.stringify(currentAnnotation ? currentAnnotation.channels : [])
       ) ||
@@ -122,7 +145,7 @@ const AnnotationForm = ({
     )
   }, [label, eventProperties, deletedTagIDs, newTags, eventChannels, currentAnnotation?.channels]);
 
-  const validateTimeRange = (timeRange) => {
+  const validateTimeRange = (timeRange: Array<number | string>) => {
     return (timeRange[0] || timeRange[0] === 0)
       && (timeRange[1] || timeRange[1] === 0)
       && !(
@@ -141,7 +164,7 @@ const AnnotationForm = ({
    *
    * @param event
    */
-  const validate = (event) => {
+  const validate = (event: Array<number | string>) => {
     return validateTimeRange(event) &&
       event[0] <= event[1] && (
         (
@@ -167,8 +190,8 @@ const AnnotationForm = ({
    * @param id
    * @param val
    */
-  const handleStartTimeChange = (id, val) => {
-    const value =  Math.min(Math.max(parseFloat(val), domain[0]), domain[1]);
+  const handleStartTimeChange = (_id: string, val: string | number) => {
+    const value =  Math.min(Math.max(parseFloat(val.toString()), domain[0]), domain[1]);
     setEventInterval([value, eventInterval[1]]);
 
     if (validateTimeRange([value, eventInterval[1]])) {
@@ -192,8 +215,8 @@ const AnnotationForm = ({
    * @param name
    * @param val
    */
-  const handleEndTimeChange = (name, val) => {
-    const value = Math.min(Math.max(parseFloat(val), domain[0]), domain[1]);
+  const handleEndTimeChange = (_name: string, val: string | number) => {
+    const value = Math.min(Math.max(parseFloat(val.toString()), domain[0]), domain[1]);
     setEventInterval([eventInterval[0], value]);
 
     if (validateTimeRange([eventInterval[0], value])) {
@@ -216,8 +239,8 @@ const AnnotationForm = ({
    * @param name
    * @param val
    */
-  const handleDurationChange = (name, val) => {
-    const value = Math.min(Math.max(parseFloat(val), domain[0]), domain[1]);
+  const handleDurationChange = (_name: string, val: string | number) => {
+    const value = Math.min(Math.max(parseFloat(val.toString()), domain[0]), domain[1]);
     const endTime = parseFloat(eventInterval[0].toString()) + value;
     setEventInterval([eventInterval[0], endTime]);
 
@@ -268,10 +291,13 @@ const AnnotationForm = ({
   /**
    *
    */
-  const handleDeleteTag = (event) => {
-    const elementID = event.target.getAttribute('id');
-    const tagRelID = elementID.split('-').pop();
-    if (currentAnnotation.hed &&
+  const handleDeleteTag = (event: React.MouseEvent<HTMLSpanElement>) => {
+    const elementID = (event.target as HTMLElement).getAttribute('id');
+    const tagRelID = elementID?.split('-').pop();
+    if (!tagRelID) {
+      return;
+    }
+    if (currentAnnotation?.hed &&
       currentAnnotation.hed.map((tag) => {
         return tag.ID.toString();
       }).includes(tagRelID)
@@ -295,7 +321,7 @@ const AnnotationForm = ({
    * @param tagIndex
    * @param value
    */
-  const handleTagChange = (tagIndex, value) => {
+  const handleTagChange = (tagIndex: number, value: string) => {
     setNewTags([
       ...newTags.slice(0, tagIndex),
       {
@@ -450,7 +476,7 @@ const AnnotationForm = ({
         deleted_hed: deletedTagIDs,
         event_type: 'trial_type',
         properties: Object.keys(eventProperties)
-          .reduce((properties, propertyName) => {
+          .reduce<Record<string, string>>((properties, propertyName) => {
             properties[propertyName] =
              eventProperties[propertyName].length > 0
               ? eventProperties[propertyName]
@@ -475,7 +501,7 @@ const AnnotationForm = ({
       const data = response.instance;
 
       // TODO: Properly handle new event -- below line strange
-      const hedTags = Array.from(data.hed_tags).map((hedTag : HEDTag) => {
+      const hedTags = (data.hed_tags as HEDTag[]).map((hedTag) => {
         const foundTag = hedSchema.find((tag) => {
           return tag.id === hedTag.HEDTagID;
         });
@@ -501,7 +527,7 @@ const AnnotationForm = ({
             )
             : hedTag.TaggerName,
           Endorsements: data.hed_endorsements
-            .filter((endorsement) => {
+            .filter((endorsement: HEDEndorsement & {HEDRelID: HEDTag['ID']}) => {
               return endorsement.HEDRelID === hedTag.ID;
             }),
         }
@@ -713,7 +739,7 @@ const AnnotationForm = ({
 
   const getUniqueDatasetTags = () => {
     const idSet = new Set<number>();
-    const tagList = [];
+    const tagList: HEDTagOption[] = [];
     Object.keys(datasetTags).forEach((columnName) => {
       Object.keys(datasetTags[columnName]).forEach((fieldValue) => {
         const hedTags = datasetTags[columnName][fieldValue].map((hedTag) => {
@@ -737,9 +763,9 @@ const AnnotationForm = ({
             }
           }
         });
-        tagList.push(...hedTags.filter((tag) => {
-          return tag !== undefined;
-        }));
+        tagList.push(...hedTags.filter(
+          (tag): tag is HEDTagOption => tag !== undefined
+        ));
       });
     });
     return tagList.sort((tagA, tagB) => {
@@ -777,7 +803,7 @@ const AnnotationForm = ({
         key={`hed-tag-${hedTag.ID}`}
         className={
         `selection-filter-tags tag-hed
-        ${hedTag.schemaElement.longName.includes('artifact')
+        ${getSchemaElementName(hedTag, true).includes('artifact')
           ? ' tag-hed-artifact'
           : ''
         }
@@ -788,12 +814,12 @@ const AnnotationForm = ({
       >
         <div className={`selection-filter-tag${belongsToEvent ? '' : ' selection-filter-dataset-tag'}`}>
           <span className="filter-tag-name">
-            {hedTag.schemaElement.name}
+            {getSchemaElementName(hedTag, false)}
           </span>
           <span
             id={`hed-tag-${hedTag.ID}`}
             className={`tag-remove-button${belongsToEvent ? '' : ' dataset-tag-remove-button'}`}
-            onClick={belongsToEvent ? handleDeleteTag : null}
+            onClick={belongsToEvent ? handleDeleteTag : undefined}
             hidden={!belongsToEvent}
           >
           x
@@ -801,11 +827,11 @@ const AnnotationForm = ({
         </div>
         <div className="badge-hed-tooltip">
           <div className="tooltip-title">
-            {hedTag.schemaElement.longName}
+            {getSchemaElementName(hedTag, true)}
           </div>
           <br/>
           <div className="tooltip-description">
-            {hedTag.schemaElement.description}
+            {hedTag.schemaElement?.description}
           </div>
           <br/>
           <div className='tooltip-footer tooltip-footer-panel'>
@@ -888,7 +914,7 @@ const AnnotationForm = ({
     );
   }
 
-  const strikethroughText = (text) => {
+  const strikethroughText = (text: string) => {
     const combiner = '\u0336';
     return text
       .split('')
@@ -903,7 +929,7 @@ const AnnotationForm = ({
       })
     });
 
-    const tagBadges = [];
+    const tagBadges: JSX.Element[] = [];
 
     rootTags.forEach((tag) => {
       if (deletedTagIDs.includes(tag.ID.toString())) {
@@ -914,17 +940,18 @@ const AnnotationForm = ({
         tagBadges.push(buildHEDBadge(tag, belongsToEvent));
         groupColorIndex++;
       } else {
-        const tagGroup = [];
-        let groupMember = tag;
+        const tagGroup: HEDTag[] = [];
+        let groupMember: HEDTag | undefined = tag;
         while (groupMember) {
-          tagGroup.push(groupMember);
+          const currentMember: HEDTag = groupMember;
+          tagGroup.push(currentMember);
           groupMember = hedTags.find((hedTag) => {
-            return hedTag.ID === groupMember.PairRelID;
+            return hedTag.ID === currentMember.PairRelID;
           });
         }
 
-        const tagBadgeGroup = [];
-        const tagBadgeSubgroup = [];
+        const tagBadgeGroup: JSX.Element[] = [];
+        const tagBadgeSubgroup: JSX.Element[] = [];
         tagGroup.reverse().map((groupTag) => {
           if (groupTag.PairRelID === null) {
             tagBadgeGroup.push(buildHEDBadge(groupTag, belongsToEvent));
@@ -1286,9 +1313,9 @@ const AnnotationForm = ({
                                   label={property}
                                   value={
                                     currentAnnotation
-                                      ? currentAnnotation.properties.some(prop => prop.PropertyName === property)
-                                        ? currentAnnotation.properties.find(prop => prop.PropertyName === property).PropertyValue
-                                        : 'n/a'
+                                      ? currentAnnotation.properties.find(
+                                        prop => prop.PropertyName === property
+                                      )?.PropertyValue ?? 'n/a'
                                       : eventProperties[property]
                                   }
                                   onUserInput={
@@ -1417,7 +1444,9 @@ const AnnotationForm = ({
                     const addOption = addHedTagOptions.find((option) => {
                       return option.value === value;
                     })
-                    handleAddTag(addOption.type)
+                    if (addOption) {
+                      handleAddTag(addOption.type);
+                    }
                   }}
                 />
               </div>
@@ -1432,7 +1461,7 @@ const AnnotationForm = ({
                       tagType: t(
                         addHedTagOptions.find((option) => {
                           return option.type === newTags[tagIndex].type;
-                        }).value,
+                        })?.value ?? '',
                         {
                           ns: 'electrophysiology_browser',
                           count: 1,

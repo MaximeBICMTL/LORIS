@@ -31,8 +31,8 @@ type CProps = {
  * @param root0.cssClass
  */
 const ResponsiveViewer : FunctionComponent<CProps> = ({
-  parentWidth,
-  parentHeight,
+  parentWidth = 400,
+  parentHeight = 300,
   mouseDown,
   mouseMove,
   mouseUp,
@@ -46,9 +46,9 @@ const ResponsiveViewer : FunctionComponent<CProps> = ({
    *
    * @param layer
    */
-  const provision = (layer) =>
+  const provision = (layer: React.ReactNode) =>
     React.cloneElement(
-      layer,
+      layer as React.ReactElement,
       {viewerWidth: parentWidth, viewerHeight: parentHeight}
     );
 
@@ -71,7 +71,7 @@ const ResponsiveViewer : FunctionComponent<CProps> = ({
    *
    * @param e
    */
-  const eventToPosition = (e) => {
+  const eventToPosition = (e: React.MouseEvent<SVGSVGElement>) => {
     const {
       top,
       left,

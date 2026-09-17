@@ -46,7 +46,7 @@ const Axis = ({
       scale={scale}
       orientation={orientation}
       tickValues={tickValues}
-      tickFormat={format}
+      tickFormat={(value) => format(value.valueOf())}
       hideAxisLine={hideLine}
       hideZero={true}
     />
@@ -64,7 +64,7 @@ Axis.defaultProps = {
    *
    * @param tick
    */
-  format: (tick) => `${tick}`,
+  format: (tick: number) => `${tick}`,
 };
 
 export default Axis;

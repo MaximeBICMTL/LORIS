@@ -1,6 +1,6 @@
 import {bisector} from 'd3-array';
 import {colorOrder} from '../../color';
-import {Channel, ChannelMetadata} from '../store/types';
+import {Channel, ChannelMetadata, Chunk} from '../store/types';
 import {MAX_RENDERED_EVENTS} from '../../vector';
 import {MutableRefObject, useContext} from 'react';
 import {getEventsInRange} from '../store/logic/events';
@@ -236,7 +236,7 @@ const SeriesCursor = (
 
 const indicesByValues = new WeakMap<object, number[]>();
 
-const createIndices = (array) => {
+const createIndices = (array: Float32Array) => {
   let indices = indicesByValues.get(array);
   if (!indices) {
     indices = Array.from(array, (_, index) => index);
@@ -249,7 +249,7 @@ const createIndices = (array) => {
  *
  * @param chunk
  */
-const indexToTime = (chunk) => (index) =>
+const indexToTime = (chunk: Chunk) => (index: number) =>
   chunk.interval[0] +
   (index / chunk.values.length) * (chunk.interval[1] - chunk.interval[0]);
 
@@ -259,7 +259,7 @@ const indexToTime = (chunk) => (index) =>
  * @param chunk
  * @param time
  */
-const computeValue = (chunk, time) => {
+const computeValue = (chunk: Chunk, time: number) => {
   const indices = createIndices(chunk.values);
   const bisectTime = bisector(indexToTime(chunk)).left;
   const idx = bisectTime(indices, time);

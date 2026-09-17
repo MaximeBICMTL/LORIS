@@ -43,12 +43,12 @@ const LineMemo = memoizeWith(
     previousPoint,
     isHovered,
     ...rest
-   }: {
+   }: Omit<CProps, 'chunk' | 'scales' | 'physioFileID' | 'withDCOffset'> & {
     values: Float32Array,
     DCOffset: number,
     filters: string[],
     interval: [number, number],
-   } & CProps) => {
+   }) => {
     const scales = [
       scaleLinear()
         .domain(interval)

@@ -1,5 +1,9 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {buildHEDString, getRootTags} from '../store/logic/events';
+import {
+  buildHEDString,
+  getRootTags,
+  getSchemaElementName,
+} from '../store/logic/events';
 import {SeriesEvent, HEDTag} from '../store/types';
 import Panel from './Panel';
 import {useTranslation} from "react-i18next";
@@ -15,6 +19,25 @@ type CProps = {
   viewerHeight: number,
   canEndorse: boolean,
   pressedKey: string,
+};
+
+type FilteredHEDEvent = {
+  event: SeriesEvent,
+  eventIndex: number,
+  tagGroups: HEDTag[][],
+};
+
+type SubmenuItem = {
+  id: number | null,
+  value: string | null,
+};
+
+type CommentPanel = {
+  ID: HEDTag['ID'],
+  text: string,
+  tagAction: string,
+  activePanel: string,
+  isOpen: boolean,
 };
 
 /**
@@ -69,12 +92,13 @@ const HEDEndorsement = ({
   }
   const {t} = useTranslation();
   const [activeFilter, setActiveFilter] = useState(HEDFilter.NO_FILTER);
-  const [filteredHEDEvents, setFilteredHEDEvents] = useState([]);
+  const [filteredHEDEvents, setFilteredHEDEvents]
+    = useState<FilteredHEDEvent[]>([]);
   const [numTags, setNumTags] = useState(0);
   const [totalHEDTags, setTotalHEDTags] = useState(0);
-  const filterMenuRef = useRef(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
   const [activeSubmenu, setActiveSubmenu] = useState(Submenu.NONE);
-  const [activeSubmenuItem, setActiveSubmenuItem] = useState({
+  const [activeSubmenuItem, setActiveSubmenuItem] = useState<SubmenuItem>({
     id: 0,
     value: ''
   });
@@ -82,16 +106,20 @@ const HEDEndorsement = ({
   const [showLongFormHED, setShowLongFormHED] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  const [openCommentPanels, setOpenCommentPanels] = useState([]);
+  const [openCommentPanels, setOpenCommentPanels] = useState<CommentPanel[]>([]);
 
   const [sendingRequest, setSendingRequest] = useState(false);
 
   const [activeItemIndex, setActiveItemIndex] = useState(0);
   const [hoveredItem, setHoveredItem] = useState('');
 
-  const hedListRef = useRef(null);
+  const hedListRef = useRef<HTMLDivElement>(null);
 
-  const TagAction = {
+  const TagAction: Record<string, {
+    text: string,
+    icon: string | undefined,
+    color: string,
+  }> = {
     'Select': {
       text: 'Select Action',
       icon: undefined,
@@ -114,7 +142,7 @@ const HEDEndorsement = ({
     },
   }
 
-  const setFilter = (activeFilter) => {
+  const setFilter = (activeFilter: string) => {
     setActiveFilter(activeFilter);
     setActiveItemIndex(0);
   }
@@ -170,11 +198,11 @@ const HEDEndorsement = ({
     setActiveItemIndex(0);
   }, [filteredHEDEvents]);
 
-  const classChange = (mutationList) => {
+  const classChange = (mutationList: MutationRecord[]) => {
     mutationList
       .filter(mutation => mutation.attributeName === 'class')
       .map((mutation) => {
-        if (!mutation.target.classList.contains('open')) {
+        if (!(mutation.target as Element).classList.contains('open')) {
           setActiveSubmenu(Submenu.NONE);
         }
       });
@@ -183,7 +211,9 @@ const HEDEndorsement = ({
   useEffect(() => {
     const filterDropdown = document.querySelector('#filter-dropdown');
     const classObserver = new MutationObserver(classChange);
-    classObserver.observe(filterDropdown, { attributes: true, });
+    if (filterDropdown) {
+      classObserver.observe(filterDropdown, {attributes: true});
+    }
 
 
     setNumTags(events.filter((event) => {
@@ -203,22 +233,22 @@ const HEDEndorsement = ({
     };
   }, []);
 
-  const jsModulo = (n, mod) => {
+  const jsModulo = (n: number, mod: number) => {
     return ((n % mod) + mod) % mod;
   }
 
-  const checkItemAtIndexVisibility = (index) => {
+  const checkItemAtIndexVisibility = (index: number) => {
     if (isNaN(index) || index >= totalHEDTags)
       return;
 
     const itemAtIndex =
       document.querySelector<HTMLElement>(`.list-group > div:nth-child(${index + 1})`);
 
-    if (itemAtIndex) {
+    if (itemAtIndex && hedListRef.current) {
       const firstItem =
         document.querySelector<HTMLElement>('.list-group > div:nth-child(1)');
 
-      const firstItemOffset = firstItem.offsetTop;
+      const firstItemOffset = firstItem?.offsetTop ?? 0;
 
       if (activeItemIndex === 0) {
         hedListRef.current.scrollTop = 0;
@@ -246,10 +276,10 @@ const HEDEndorsement = ({
     checkItemAtIndexVisibility(activeItemIndex);
   }, [activeItemIndex]);
 
-  const getItemAtIndex = (itemIndex) => {
-    const tags = filteredHEDEvents.map((event) => {
-      return event.tagGroups.flat();
-    }).flat();
+  const getItemAtIndex = (itemIndex: number): HEDTag | undefined => {
+    const tags = filteredHEDEvents.reduce<HEDTag[]>((allTags, event) => {
+      return allTags.concat(...event.tagGroups);
+    }, []);
     return tags[itemIndex];
   }
 
@@ -257,7 +287,7 @@ const HEDEndorsement = ({
     return getItemAtIndex(activeItemIndex);
   }
 
-  const getItemEvent = (item) => {
+  const getItemEvent = (item?: HEDTag): SeriesEvent | undefined => {
     return item && events.find((event) => {
       const eventHED = event.hed;
       return (
@@ -271,7 +301,7 @@ const HEDEndorsement = ({
     return getItemEvent(getActiveItem());
   }
 
-  const getEventIndex = (event) => {
+  const getEventIndex = (event?: SeriesEvent): number | null => {
     return event ? events.findIndex(e => e.physiologicalTaskEventID === event.physiologicalTaskEventID) : null;
   }
 
@@ -296,13 +326,13 @@ const HEDEndorsement = ({
   }, [activeItemIndex]);
 
 
-  const focusCommentWithID = (itemID) => {
+  const focusCommentWithID = (itemID: HEDTag['ID']) => {
     document.getElementById(
       `hed-endorsement-comment-${itemID}`
     )?.focus();
   }
 
-  const selectActiveItemTagAction = (tagAction) => {
+  const selectActiveItemTagAction = (tagAction: string) => {
     const activeItem = getActiveItem();
 
     if (activeItem) {
@@ -322,7 +352,7 @@ const HEDEndorsement = ({
         }
       ]);
       setTimeout(() => {
-        focusCommentWithID(activeItem.ID);
+        focusCommentWithID(activeItem?.ID);
         // Adjust to new height
         checkItemAtIndexVisibility(activeItemIndex);
       }, 0);
@@ -331,6 +361,9 @@ const HEDEndorsement = ({
 
   const performActiveItemTagAction = () => {
     const activeItem = getActiveItem();
+    if (!activeItem) {
+      return;
+    }
     const panelFound = openCommentPanels
       .find(panel => panel.ID === activeItem.ID);
     if (panelFound) {
@@ -405,7 +438,11 @@ const HEDEndorsement = ({
     }
   }, [pressedKey]);
 
-  const tagInGroupHasComment = (tag: HEDTag, tagList: HEDTag[]) => {
+  const tagInGroupHasComment = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[]
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.filter((endorsement) => {
       return endorsement.EndorsementComment !== null;
     }).length > 0 || (
@@ -414,7 +451,11 @@ const HEDEndorsement = ({
     );
   }
 
-  const tagInGroupHasCaveat = (tag: HEDTag, tagList: HEDTag[]) => {
+  const tagInGroupHasCaveat = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[]
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.filter((endorsement) => {
       return endorsement.EndorsementStatus === 'Caveat';
     }).length > 0 || (
@@ -423,7 +464,12 @@ const HEDEndorsement = ({
     );
   }
 
-  const tagInGroupIsCaveatBy = (tag: HEDTag, tagList: HEDTag[], endorserID: number) => {
+  const tagInGroupIsCaveatBy = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[],
+    endorserID: number | null
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.filter((endorsement) => {
       return endorsement.EndorsedByID === endorserID &&
         endorsement.EndorsementStatus === 'Caveat';
@@ -433,17 +479,24 @@ const HEDEndorsement = ({
     );
   }
 
-  const tagInGroupContainsSearchText = (tag: HEDTag, tagList: HEDTag[], text: string) => {
+  const tagInGroupContainsSearchText = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[],
+    text: string
+  ): boolean => {
+    if (!tag) return false;
     const searchText = text
       .toLowerCase()
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');  // Escape regex characters
     return (
       (
         !showLongFormHED &&
-        tag.schemaElement.name.toLowerCase().search(searchText) > -1
+        getSchemaElementName(tag, false)
+          .toLowerCase().search(searchText) > -1
       ) || (
         showLongFormHED &&
-        tag.schemaElement.longName.toLowerCase().search(searchText) > -1
+        getSchemaElementName(tag, true)
+          .toLowerCase().search(searchText) > -1
       )
     ) || (
       tag.PairRelID !== null &&
@@ -451,7 +504,12 @@ const HEDEndorsement = ({
     );
   }
 
-  const tagInGroupEndorsedBy = (tag: HEDTag, tagList: HEDTag[], endorserID: number) => {
+  const tagInGroupEndorsedBy = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[],
+    endorserID: number | null
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.filter((endorsement) => {
       return endorsement.EndorsedByID === endorserID &&
         endorsement.EndorsementStatus === 'Endorsed';
@@ -461,14 +519,23 @@ const HEDEndorsement = ({
     );
   }
 
-  const tagInGroupTaggedBy = (tag: HEDTag, tagList: HEDTag[], taggerID: number) => {
+  const tagInGroupTaggedBy = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[],
+    taggerID: number | null
+  ): boolean => {
+    if (!tag) return false;
     return tag.TaggedBy === taggerID || (
       tag.PairRelID !== null &&
       tagInGroupTaggedBy(tagList.find(t => t.ID === tag.PairRelID), tagList, taggerID)
     );
   }
 
-  const tagInGroupIsEndorsed = (tag: HEDTag, tagList: HEDTag[]) => {
+  const tagInGroupIsEndorsed = (
+    tag: HEDTag | undefined,
+    tagList: HEDTag[]
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.length === 0 ||
       tag.Endorsements.every((endorsement) => {
         return endorsement.EndorsementStatus !== 'Endorsed'
@@ -480,15 +547,16 @@ const HEDEndorsement = ({
 
   const buildTagGroup = (rootTag: HEDTag, hedTags: HEDTag[]) => {
     const tagGroup = [rootTag];
-    let tag = rootTag;
+    let tag: HEDTag | undefined = rootTag;
     while (tag && tag.PairRelID !== null) {
-      tag = hedTags.find(hedTag => hedTag.ID === tag.PairRelID);
-      tagGroup.push(tag);
+      const currentTag: HEDTag = tag;
+      tag = hedTags.find(hedTag => hedTag.ID === currentTag.PairRelID);
+      if (tag) tagGroup.push(tag);
     }
     return tagGroup;
   }
 
-  const jumpToEvent = (event: SeriesEvent) => {
+  const jumpToEvent = (event?: SeriesEvent) => {
     if (!event) { return; }
 
     const eventTimeRange = [
@@ -504,7 +572,7 @@ const HEDEndorsement = ({
     ]);
   };
 
-  const handleEditClick = (event) => {
+  const handleEditClick = (event: SeriesEvent) => {
     setCurrentAnnotation(event);
     setRightPanel('annotationForm');
     const startTime = event.onset;
@@ -512,7 +580,7 @@ const HEDEndorsement = ({
     setTimeSelection([startTime, endTime]);
   };
 
-  const handleTextChange = (event) => {
+  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(event.target.value)
   }
 
@@ -555,6 +623,7 @@ const HEDEndorsement = ({
       const hedWithEndorsement = eventWithEndorsement.hed.find(
         tag => tag.ID === rootTagID
       );
+      if (!hedWithEndorsement) throw new Error('HED tag not found');
       const updatedEvent = {
         ...eventWithEndorsement,
         hed: [
@@ -577,6 +646,7 @@ const HEDEndorsement = ({
       const alertElement = document.getElementById(
         `hed-endorsement-alert-${rootTagID}`
       );
+      if (!alertElement) return;
       alertElement.style.visibility = 'visible';
       setTimeout(() => {
         alertElement.style.visibility = 'hidden';
@@ -584,7 +654,7 @@ const HEDEndorsement = ({
     });
   }
 
-  const getFilterDecoration = (filterName) => {
+  const getFilterDecoration = (filterName: string) => {
     let filterNameDecoration = <></>;
     switch (filterName) {
       case HEDFilter['ENDORSED']:
@@ -798,12 +868,12 @@ const HEDEndorsement = ({
                   </React.Fragment>;
                   if ([HEDFilter.TAGGED_BY, HEDFilter.ENDORSED_BY, HEDFilter.CAVEAT_BY].includes(filterName)) {
 
-                    let itemList = [];
+                    let itemList: SubmenuItem[] = [];
                     let submenuIsActive = false;
                     switch (filterName) {
                       case HEDFilter.TAGGED_BY:
                         // Unique list of taggers
-                        itemList = filteredHEDEvents.reduce((taggers, hedEvent) => {
+                        itemList = filteredHEDEvents.reduce<SubmenuItem[]>((taggers, hedEvent) => {
                           hedEvent.event.hed.forEach((hedTagger) => {
                             if (!taggers.map(
                               tagger => tagger.id
@@ -815,13 +885,14 @@ const HEDEndorsement = ({
                           });
                           return taggers;
                         }, []).sort((a, b) => {
-                          return a.value - b.value;
+                          return (a.value ?? '').localeCompare(b.value ?? '');
                         });
                         submenuIsActive = activeSubmenu === Submenu.TAGGED_BY;
                         break;
                       case HEDFilter.ENDORSED_BY:
                         // Unique list of endorsers
-                        itemList = filteredHEDEvents.reduce((endorsements, hedEvent) => {
+                        itemList = filteredHEDEvents.reduce<SubmenuItem[]>(
+                          (endorsements, hedEvent) => {
                           const hedEndorsements = hedEvent.event.hed
                             .map(tag => tag.Endorsements).flat()
                             .filter(endorsement => endorsement.EndorsementStatus === 'Endorsed')
@@ -836,14 +907,16 @@ const HEDEndorsement = ({
                             }
                           });
                           return endorsements;
-                        }, []).sort((a, b) => {
-                          return a.value - b.value;
+                        }, [])
+                          .sort((a, b) => {
+                          return (a.value ?? '').localeCompare(b.value ?? '');
                         });
                         submenuIsActive = activeSubmenu === Submenu.ENDORSED_BY;
                         break;
                       case HEDFilter.CAVEAT_BY: // TODO: Consider merging with above
                         // Unique list of caveat authors
-                        itemList = filteredHEDEvents.reduce((endorsements, hedEvent) => {
+                        itemList = filteredHEDEvents.reduce<SubmenuItem[]>(
+                          (endorsements, hedEvent) => {
                           const hedEndorsements = hedEvent.event.hed
                             .map(tag => tag.Endorsements).flat()
                             .filter(endorsement => endorsement.EndorsementStatus === 'Caveat');
@@ -859,8 +932,9 @@ const HEDEndorsement = ({
                             }
                           });
                           return endorsements;
-                        }, []).sort((a, b) => {
-                          return a.value - b.value;
+                        }, [])
+                          .sort((a, b) => {
+                          return (a.value ?? '').localeCompare(b.value ?? '');
                         });
                         submenuIsActive = activeSubmenu === Submenu.CAVEAT_BY;
                         break;
@@ -893,13 +967,14 @@ const HEDEndorsement = ({
                                 return (
                                   <li
                                     key={`tagger_${item.id}_${i}`}
-                                    className={activeItem ? 'active' : null}
+                                    className={activeItem ? 'active' : undefined}
                                     onClick={(event) => {
                                       event.stopPropagation();
                                       setFilter(filterName);
                                       setActiveSubmenuItem(item)
                                       // Close parent menu
-                                      filterMenuRef.current.classList.remove('open');
+                                      filterMenuRef.current?.classList
+                                        .remove('open');
                                     }}
                                   >
                                     {item.value}
@@ -926,7 +1001,9 @@ const HEDEndorsement = ({
                   return (
                     <li
                       key={`'filter-${filterIndex}`}
-                      className={filterName === activeFilter ? 'active' : null}
+                      className={
+                        filterName === activeFilter ? 'active' : undefined
+                      }
                       onClick={(event) => {
                         switch (filterName) {
                           case HEDFilter.TAGGED_BY:
@@ -1314,6 +1391,9 @@ const HEDEndorsement = ({
               }).flat()
             }).flat().map((eventEntry, i) => {
               const event = eventEntry.event;
+              const commentPanel = openCommentPanels.find(
+                (panel) => panel.ID === eventEntry.tagGroup[0].ID
+              );
               return (
                 <div
                   key={eventEntry.tagGroup[0].ID}
@@ -1696,25 +1776,20 @@ const HEDEndorsement = ({
                             >
                               <div>
                               {
-                                openCommentPanels
-                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
+                                commentPanel
                                   ? (
                                     <>
                                       {
                                         TagAction[
-                                          openCommentPanels.find(
-                                            panel => panel.ID === eventEntry.tagGroup[0].ID
-                                          ).tagAction
+                                          commentPanel.tagAction
                                           ].icon && (
                                           <>
                                             <i
                                               className={'glyphicon glyphicon-' +
-                                                TagAction[openCommentPanels
-                                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
+                                                TagAction[commentPanel.tagAction
                                                   ].icon}
                                               style={{ color: TagAction[
-                                                  openCommentPanels
-                                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
+                                                  commentPanel.tagAction
                                                   ].color,
                                               }}
                                             />
@@ -1724,8 +1799,7 @@ const HEDEndorsement = ({
                                       }
                                       {
                                         t(TagAction[
-                                          openCommentPanels
-                                            .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
+                                          commentPanel.tagAction
                                           ].text, {
                                           ns: 'electrophysiology_browser'
                                         })
@@ -1760,8 +1834,7 @@ const HEDEndorsement = ({
                                     <li
                                       key={`tag-action-${i}`}
                                       onClick={() => {
-                                        const panelFound = openCommentPanels
-                                          .find(panel => panel.ID === eventEntry.tagGroup[0].ID);
+                                        const panelFound = commentPanel;
 
                                         setOpenCommentPanels([
                                           ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
@@ -1817,25 +1890,22 @@ const HEDEndorsement = ({
                       )
                     }
                     {
-                      canEndorse && openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID) &&
-                      openCommentPanels
-                        .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
+                      canEndorse && commentPanel &&
+                      commentPanel
                         .isOpen && (
                           <div
                             style={{ marginBottom: '5px', }}
                           >
                             {
-                              openCommentPanels.find(
-                                panel => panel.ID === eventEntry.tagGroup[0].ID
-                              ).activePanel === 'Comment' && (
+                              commentPanel.activePanel === 'Comment' && (
                                 <textarea
                                   id={`hed-endorsement-comment-${eventEntry.tagGroup[0].ID}`}
-                                  value={openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID).text}
+                                  value={commentPanel.text}
                                   onChange={(e) => {
                                     setOpenCommentPanels([
                                       ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
                                       {
-                                        ...openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID),
+                                        ...commentPanel,
                                         text: e.target.value
                                       }
                                     ]);
@@ -1860,17 +1930,13 @@ const HEDEndorsement = ({
                             >
                               <button
                                 disabled={
-                                  openCommentPanels
-                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
+                                  commentPanel
                                     .text.length === 0 &&
-                                  openCommentPanels
-                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
+                                  commentPanel
                                     .activePanel === 'Comment'
                                 }
                                 onClick={() => {
-                                  const panel = openCommentPanels.find(
-                                    panel => panel.ID === eventEntry.tagGroup[0].ID
-                                  );
+                                  const panel = commentPanel;
                                   setSendingRequest(true);
                                   handleEndorseSubmit(panel);
                                   setOpenCommentPanels(
@@ -1887,8 +1953,7 @@ const HEDEndorsement = ({
                                 {t('Submit', {ns: 'loris'})}
                               </button>
                               {
-                                openCommentPanels
-                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
+                                commentPanel
                                   .activePanel === 'Comment' && (
                                   <button
                                     onClick={(e) => {
@@ -1896,7 +1961,7 @@ const HEDEndorsement = ({
                                       setOpenCommentPanels([
                                         ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
                                         {
-                                          ...openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID),
+                                          ...commentPanel,
                                           text: '',
                                         },
                                       ]);

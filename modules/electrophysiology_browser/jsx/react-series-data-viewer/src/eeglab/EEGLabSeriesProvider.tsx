@@ -12,7 +12,7 @@ import {
 } from '../vector';
 import {
   ChannelInfo, ChannelInfos, ChannelMetadata, CoordinateSystem, EventMetadata,
-  HEDSchemaElement, Sensor,
+  HEDSchemaElement, HEDTag, HEDEndorsement, Sensor, SeriesEvent,
 } from '../series/store/types';
 import TriggerableModal from 'jsx/TriggerableModal';
 import DatasetTagger from '../series/components/DatasetTagger';
@@ -28,15 +28,15 @@ import {HEDState} from '../series/contexts/HEDContext';
 
 type CProps = {
   channelsURL: string,
-  chunksURL: string,
+  chunksURL: string | string[],
   eventsURL: string,
   electrodesURL: string,
   coordSystemURL: string,
   megSensorsURL?: string,
   megHeadShapeURL?: string,
   hedSchema: HEDSchemaElement[],
-  datasetTags: any,
-  datasetTagEndorsements: any,
+  datasetTags: Record<string, Record<string, HEDTag[]>>,
+  datasetTagEndorsements: Array<Record<string, any>>,
   events: EventMetadata,
   physioFileID: number,
   limit: number,
@@ -47,7 +47,7 @@ type CProps = {
   t: any,
 };
 
-const MenuOption = {
+const MenuOption: Record<string, string> = {
   'TAG_MODE': 'View/Edit Tags',
   'ENDORSEMENT_MODE': 'Endorse Tags',
   'JSON_MODE': 'View JSON',
@@ -232,10 +232,18 @@ type CClassProps = CProps & {
   setChannelMetas: (_: ChannelMetadata[]) => void,
 };
 
+type ProviderState = {
+  activeMenuOption: string,
+  datasetTaggerTabsRef: React.RefObject<HTMLDivElement>,
+  events: SeriesEvent[],
+  recordingMetadata: RecordingMetadata,
+  initialHEDState: HEDState,
+};
+
 /**
  * EEGLabSeriesProviderClass component
  */
-class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
+class EEGLabSeriesProviderClass extends Component<CClassProps, ProviderState> {
   /**
    * @class
    * @param {object} props - React Component properties
@@ -244,7 +252,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
     super(props);
     this.state = {
       activeMenuOption: 'TAG_MODE',
-      datasetTaggerTabsRef: createRef(),
+      datasetTaggerTabsRef: createRef<HTMLDivElement>(),
       events: [],
       recordingMetadata: {
         chunksURL: '',
@@ -258,6 +266,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
         seriesRange: [-1, 2],
         recordingHasHED: props.recordingHasHED,
       } as RecordingMetadata,
+      initialHEDState: {} as HEDState,
     };
 
     const {
@@ -269,8 +278,9 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       t,
       setChannelMetas,
     } = props;
+    const chunksBaseURL = Array.isArray(chunksURL) ? chunksURL[0] : chunksURL;
 
-    const formattedDatasetTags = {};
+    const formattedDatasetTags: Record<string, Record<string, HEDTag[]>> = {};
     Object.keys(datasetTags).forEach((column) => {
       formattedDatasetTags[column] = {};
       Object.keys(datasetTags[column]).forEach((value) => {
@@ -293,7 +303,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
               });
             return {
               ...tag,
-              AdditionalMembers: parseInt(tag.AdditionalMembers),
+              AdditionalMembers: parseInt(String(tag.AdditionalMembers)),
               TaggerName: tag.TaggerName === 'Origin'
                 ? t('Data Authors', {ns: 'electrophysiology_browser'})
                 : tag.TaggerName,
@@ -303,14 +313,17 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
           });
       });
     });
-    this.state.initialHEDState = {
-      hedSchema,
-      datasetTags: formattedDatasetTags,
-      relOverrides: [],
-      addedTags: [],
-      deletedTags: [],
-      tagsHaveChanges: false,
-    } as HEDState;
+    this.state = {
+      ...this.state,
+      initialHEDState: {
+        hedSchema,
+        datasetTags: formattedDatasetTags,
+        relOverrides: [],
+        addedTags: [],
+        deletedTags: [],
+        tagsHaveChanges: false,
+      } as HEDState,
+    };
 
     /**
      *
@@ -319,28 +332,34 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
      * @param {string} route - The route
      * @returns {Promise} - The data
      */
-    const racers = (fetcher, url, route = '') => {
+    const racers = (
+      fetcher: (requestURL: string) => Promise<any>,
+      url: string,
+      route = ''
+    ): Array<Promise<{json: any, url: string} | undefined>> => {
       if (url) {
         return [fetcher(`${url}${route}`)
           .then((json) => ({json, url}))
           // if request fails don't resolve
           .catch((error) => {
             console.error(error);
-            return Promise.resolve();
+            return undefined;
           })];
       } else {
-        return [Promise.resolve()];
+        return [Promise.resolve(undefined)];
       }
     };
 
-    Promise.race(racers(fetchJSON, chunksURL, '/index.json')).then(
-      ({json, url}) => {
+    Promise.race(racers(fetchJSON, chunksBaseURL, '/index.json')).then(
+      (result) => {
+        if (!result) return;
+        const {json, url} = result;
         if (json) {
           const {
             channelMetadata, shapes, timeInterval, seriesRange, validSamples,
           } = json;
           setChannelMetas(channelMetadata);
-          this.setState(({recordingMetadata}) => ({
+          this.setState(({recordingMetadata}: ProviderState) => ({
             recordingMetadata: {
               ...recordingMetadata,
               chunksURL: url,
@@ -353,13 +372,18 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
         }
       }
     ).then(() => {
-      const parsedEvents = [];
+      const parsedEvents: SeriesEvent[] = [];
       const channelDelimiter = events['channel_delimiter'].length > 0
         ? events['channel_delimiter']
         : DEFAULT_CHANNEL_DELIMITER;
-      this.setState(({recordingMetadata}) => ({
+      this.setState(({recordingMetadata}: ProviderState) => ({
         recordingMetadata: {...recordingMetadata, channelDelimiter},
       }));
+
+      // `extra_columns` is not always serialised as an array by the API.
+      const extraColumns = Array.isArray(events.extra_columns)
+        ? events.extra_columns
+        : [];
 
       events.instances.map((instance) => {
         const eventIndex = parsedEvents.findIndex(
@@ -367,13 +391,13 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             === instance.PhysiologicalTaskEventID
         );
 
-        const extraColumns = Array.from(events['extra_columns'])
+        const eventExtraColumns = extraColumns
           .filter((column) => {
             return column['PhysiologicalTaskEventID']
             === instance.PhysiologicalTaskEventID;
           });
 
-        const hedTags = Array.from(events['hed_tags']).filter((column) => {
+        const hedTags = events.hed_tags.filter((column) => {
           return column['PhysiologicalTaskEventID']
             === instance.PhysiologicalTaskEventID;
         }).map((hedTag) => {
@@ -403,6 +427,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
 
           // Currently only supporting schema-defined HED tags
           return {
+            // The UI only supports schema-defined HED tags.
             schemaElement: foundTag ?? null,
             HEDTagID: foundTag ? foundTag.id : null,
             ID: hedTag['ID'],
@@ -433,7 +458,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             label: eventLabel ?? instance.EventValue,
             value: instance.EventValue,
             trialType: instance.TrialType,
-            properties: extraColumns,
+            properties: eventExtraColumns,
             hed: hedTags,
             channels: ['n/a', null].includes(instance.Channel)
               ? []
@@ -449,7 +474,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       return parsedEvents;
     }).then((parsedEvents) => {
       const sortedEvents = parsedEvents
-        .flat()
         .sort(function(a, b) {
           return a.onset - b.onset;
         });
@@ -472,6 +496,13 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
         style={{height: '46px'}}
       />
     );
+    const chunksBaseURL = Array.isArray(this.props.chunksURL)
+      ? this.props.chunksURL[0]
+      : this.props.chunksURL;
+    const filenamePrefix = chunksBaseURL
+      .split('/').slice(-1)[0] // filename
+      .split('_').slice(0, -1) // prefix
+      .join('_');
 
     return (
       <ViewerStateProviders
@@ -580,11 +611,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
                 setActiveMenuTab={(menuOption) => {
                   this.setState({activeMenuOption: menuOption});
                 }}
-                filenamePrefix={this.props.chunksURL[0]
-                  .split('/').at(-1) // filename
-                  .split('_').slice(0, -1) // prefix
-                  .join('_')
-                }
+                filenamePrefix={filenamePrefix}
               />
             </TriggerableModal>
             </div>

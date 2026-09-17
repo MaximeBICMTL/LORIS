@@ -83,8 +83,8 @@ const EventManager = ({
   const [activeLabel, setActiveLabel] = useState('trial_type');
   const [searchText, setSearchText] = useState('');
 
-  const getEventLabels = (label) => {
-    const labels = [];
+  const getEventLabels = (label: string) => {
+    const labels: string[] = [];
     events.forEach((event) => {
       switch (label) {
         case 'trial_type':
@@ -176,7 +176,7 @@ const EventManager = ({
     }));
   }, [eventsInRange, searchText, ignoreNA, invertSearchResults, activeLabels, triggerUpdate]);
 
-  const setCommentsInRangeVisibility = (visible) => {
+  const setCommentsInRangeVisibility = (visible: boolean) => {
     let commentIndices = [...filteredEvents.columnVisibility];
     eventsInRange.forEach((eventIndex) => {
       if (events[eventIndex].properties.length > 0 || events[eventIndex].hed) {
@@ -197,7 +197,7 @@ const EventManager = ({
    *
    * @param visible
    */
-  const setEventsInViewVisibility = (visible) => {
+  const setEventsInViewVisibility = (visible: boolean) => {
     if (eventsInRange.length < MAX_RENDERED_EVENTS) {
       eventsInRange.forEach((eventIndex) => {
         if ((visible && !filteredEvents.plotVisibility.includes(eventIndex))
@@ -208,7 +208,7 @@ const EventManager = ({
     }
   }
 
-  const indexVisibleBySearch = (eventIndex) => {
+  const indexVisibleBySearch = (eventIndex: number) => {
     const lowerCaseLabel = activeLabels[eventIndex]?.toLowerCase();
     const lowerCaseSearchText = searchText.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');   // Escaped backslashes
     if (eventIndex < activeLabels.length) {
@@ -227,7 +227,7 @@ const EventManager = ({
     return false;
   }
 
-  const handleTextChange = (event) => {
+  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchText(event.target.value)
   }
 

@@ -166,10 +166,10 @@ const SeriesRenderer: FunctionComponent = () => {
     const toggleSingleMode = () => setSingleMode((value) => !value);
     const [showOverflow, setShowOverflow] = useState(false);
     const toggleShowOverflow = () => setShowOverflow((value) => !value);
-    const [refNode, setRefNode] = useState<HTMLDivElement>(null);
-    const [bounds, setBounds] = useState<ClientRect>(null);
+    const [refNode, setRefNode] = useState<HTMLDivElement | null>(null);
+    const [bounds, setBounds] = useState<ClientRect | null>(null);
     const [offsetIndex, setOffsetIndex] = useState(1);
-    const getBounds = useCallback((domNode) => {
+    const getBounds = useCallback((domNode: HTMLDivElement | null) => {
         if (domNode) {
             setRefNode(domNode);
         }
@@ -177,7 +177,7 @@ const SeriesRenderer: FunctionComponent = () => {
     const [loadingBarVisibility, setLoadingBarVisibility] = useState(false);
 
     const [panelIsDirty, setPanelIsDirty] = useState(false);
-    const [eventChannels, setEventChannels] = useState([]);
+    const [eventChannels, setEventChannels] = useState<string[]>([]);
     const {t} = useTranslation();
     const imagingCapabilities = useContext(
       ImagingGatewayCapabilitiesContext
@@ -272,7 +272,7 @@ const SeriesRenderer: FunctionComponent = () => {
     }
   };
 
-  const confirmPanelClose = (callbackFn) => {
+  const confirmPanelClose = (callbackFn: () => void) => {
     if (panelIsDirty) {
       return swal.fire({
         title: t('Are you sure?', {ns: 'loris'}),
@@ -345,8 +345,8 @@ const SeriesRenderer: FunctionComponent = () => {
     /**
      *
      */
-    const keydownHandler = (e) => {
-      const hedSearchIsFocus = document.activeElement.id === 'hed-search';
+    const keydownHandler = (e: KeyboardEvent) => {
+      const hedSearchIsFocus = document.activeElement?.id === 'hed-search';
       if ([
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyI', 'KeyJ', 'KeyK'
       ].indexOf(e.code) > -1) {
@@ -455,7 +455,7 @@ const SeriesRenderer: FunctionComponent = () => {
   ]);
 
   useEffect(() => { // Keyup handler
-    const keyupHandler = (e) => {
+    const keyupHandler = (e: KeyboardEvent) => {
       if ([
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
       ].indexOf(e.code) > -1) {
@@ -495,7 +495,7 @@ const SeriesRenderer: FunctionComponent = () => {
     }
   }, [viewerWidth]);
 
-  const prevHoveredChannels = useRef([]);
+  const prevHoveredChannels = useRef<number[]>([]);
   const defaultLineColor = '#999';
 
   /**
@@ -578,7 +578,11 @@ const SeriesRenderer: FunctionComponent = () => {
   /**
    *
    */
-  const XAxisLayer = ({viewerWidth, viewerHeight, interval}) => {
+  const XAxisLayer = ({viewerWidth, viewerHeight, interval}: {
+    viewerWidth: number,
+    viewerHeight: number,
+    interval: [number, number],
+  }) => {
     return (
       <>
         <Group top={-viewerHeight/2} left={-viewerWidth/2}>
@@ -676,7 +680,10 @@ const SeriesRenderer: FunctionComponent = () => {
   /**
    *
    */
-  const ChannelAxesLayer = ({viewerWidth, viewerHeight}) => {
+  const ChannelAxesLayer = ({viewerWidth, viewerHeight}: {
+    viewerWidth: number,
+    viewerHeight: number,
+  }) => {
     const axisHeight = viewerHeight / numDisplayedChannels;
     return (
       <Group top={-viewerHeight/2} left={-viewerWidth/2}>
@@ -703,7 +710,7 @@ const SeriesRenderer: FunctionComponent = () => {
   /**
    *
    */
-  const ChannelsLayer = ({viewerWidth}) => {
+  const ChannelsLayer = ({viewerWidth}: {viewerWidth: number}) => {
     useEffect(() => {
       setViewerWidth(viewerWidth);
     }, [viewerWidth]);
@@ -838,7 +845,7 @@ const SeriesRenderer: FunctionComponent = () => {
               /**
                *
                */
-              const getScaledMean = (values) => {
+              const getScaledMean = (values: Float32Array) => {
                 let numValues = values.length;
                 return values.reduce((a, b) => {
                     if (isNaN(b)) {
@@ -953,7 +960,7 @@ const SeriesRenderer: FunctionComponent = () => {
     setHoveredChannels(channelIndex === -1 ? [] : [channelIndex]);
   };
 
-  const flushWidth = (progressBarRef) => {
+  const flushWidth = (progressBarRef: HTMLElement) => {
     progressBarRef.style.width; // Force flush
     setTimeout(
       () => {
@@ -964,7 +971,7 @@ const SeriesRenderer: FunctionComponent = () => {
     );
   }
 
-  const setProgressBarWidth = (width) => {
+  const setProgressBarWidth = (width: string) => {
     setLoadingBarVisibility(false);
     const progressBarRef = document.querySelector<HTMLElement>('#chunk-progress-bar');
     if (!progressBarRef) return;
@@ -996,7 +1003,8 @@ const SeriesRenderer: FunctionComponent = () => {
     'HED_ENDORSEMENT': 'HED Endorsements',
   }
 
-  const canEditEvents = chunksURL[0]?.includes('Face13');
+  // TODO: gate event editing on a permission rather than a dataset name.
+  const canEditEvents = chunksURL.includes('Face13');
 
   const ZoomControls = (
     <div
@@ -1081,7 +1089,7 @@ const SeriesRenderer: FunctionComponent = () => {
                   {imagingCapabilities.topographicMap && (
                     <TopographicMapButton
                       physioFileID={physioFileID}
-                      timeSelection={timeSelection}
+                      timeSelection={timeSelection ?? undefined}
                       lowPass={lowPass}
                       highPass={highPass}
                     />
@@ -1437,7 +1445,7 @@ const SeriesRenderer: FunctionComponent = () => {
                   }}
                 >
                   {
-                    Object.keys(MenuOption).map((menuOption, i) => {
+                    Object.entries(MenuOption).map(([menuOption, label], i) => {
                       const isActiveMenuOption =
                         (['eventList', 'annotationForm'].includes(rightPanel) && menuOption == 'MANAGE_EVENTS') ||
                         (rightPanel === 'hedEndorsement' && menuOption == 'HED_ENDORSEMENT')
@@ -1478,7 +1486,7 @@ const SeriesRenderer: FunctionComponent = () => {
                               event.preventDefault();
                             }}
                           >
-                            {t(MenuOption[menuOption], {
+                            {t(label, {
                               ns: 'electrophysiology_browser'
                             })}
                           </a>

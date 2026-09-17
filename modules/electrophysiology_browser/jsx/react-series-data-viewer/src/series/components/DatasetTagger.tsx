@@ -1,15 +1,31 @@
 import React, {MutableRefObject, useEffect, useRef, useState} from 'react';
 import {CheckboxElement, SelectDropdown} from './Form';
 import Panel from './Panel'; // Different from jsx/Panel
-import {HEDSchemaElement, HEDTag} from "../store/types";
+import {
+  EndorsementStatus,
+  HEDEndorsement,
+  HEDSchemaElement,
+  HEDTag,
+} from "../store/types";
 import swal from "sweetalert2";
-import {buildHEDString, getNthMemberTrailingBadgeIndex, getRootTags} from "../store/logic/events";
+import {
+  buildHEDString,
+  getNthMemberTrailingBadgeIndex,
+  getRootTags,
+  getSchemaElementName,
+} from "../store/logic/events";
 import {colorOrder} from "../../color";
 import {Trans, useTranslation} from "react-i18next";
 import {useRecording} from '../contexts/RecordingContext';
 import {useHED} from '../contexts/HEDContext';
 
-const TagAction = {
+type TagActionName = 'Select' | EndorsementStatus;
+
+const TagAction: Record<TagActionName, {
+  text: string,
+  icon: string | undefined,
+  color: string,
+}> = {
   'Select': {
     text: 'Select Action',
     icon: undefined,
@@ -31,6 +47,23 @@ const TagAction = {
     color: '#256eb6',
   },
 }
+
+/** The tag whose details are shown in the dataset tooltip. */
+type DatasetTooltip = {
+  title: string,
+  description: string,
+  taggedBy: number | null,
+  taggerName: string | null,
+  endorsements: HEDEndorsement[],
+};
+
+/** Mapping of a locally added tag to the tag created by the server. */
+type TagIDMapping = {
+  AddID: HEDTag['ID'],
+  RelID: HEDTag['ID'],
+  TaggerName: string | null,
+  TaggedBy: number | null,
+};
 
 type CProps = {
   activeMenuTab: string,
@@ -90,27 +123,31 @@ const DatasetTagger = ({
   const [activeColumnName, setActiveColumnName] = useState('');
   const [activeFieldValue, setActiveFieldValue] = useState('');
   const [submittingChanges, setSubmittingChanges] = useState(false);
-  const [datasetTooltip, setDatasetTooltip] = useState({
+  const [datasetTooltip, setDatasetTooltip] = useState<DatasetTooltip>({
     title: '',
     description: '',
     taggedBy: 0,
     taggerName: '',
     endorsements: [],
   });
-  const [activeHEDSchemas, setActiveHEDSchemas] = useState({});
+  const [activeHEDSchemas, setActiveHEDSchemas] =
+    useState<Record<string, boolean>>({});
   const [numJSONSpaces, setNumJSONSpaces] = useState(2);
   const [showUnpublishedTags, setShowUnpublishedTags] = useState(false);
 
-  const [activeEndorsementMenuItem, setActiveEndorsementMenuItem] = useState({
+  const [activeEndorsementMenuItem, setActiveEndorsementMenuItem] = useState<{
+    action: TagActionName,
+    commentText: string,
+  }>({
     action: 'Select',
     commentText: '',
   });
-  const endorsementMenuRef = useRef(null);
+  const endorsementMenuRef = useRef<HTMLUListElement>(null);
 
 
-  const handleOutsideClick = (event) => {
+  const handleOutsideClick = (event: Event) => {
     // Currently the best way to distinguish outer box
-    if (event.target.style.zIndex === '9999') {
+    if ((event.target as HTMLElement).style.zIndex === '9999') {
       event.stopPropagation();
     }
   }
@@ -122,7 +159,7 @@ const DatasetTagger = ({
     setGroupedTags([]);
   }
 
-  const onModalClose = (event) => {
+  const onModalClose = (event: Event) => {
     if ([...addedTags, ...deletedTags].length > 0) {
       event.stopPropagation();
       swal.fire({
@@ -145,7 +182,7 @@ const DatasetTagger = ({
       }).then((result) => {
         if (result.value) {
           resetAllChanges();
-          event.target.dispatchEvent((new Event('click', { bubbles: true, cancelable: true })));
+          event.target?.dispatchEvent((new Event('click', { bubbles: true, cancelable: true })));
         }
       });
     }
@@ -153,7 +190,7 @@ const DatasetTagger = ({
 
   useEffect(() => {
     // Initialize active HED schemas
-    const activeSchemas = {};
+    const activeSchemas: Record<string, boolean> = {};
     hedSchema.forEach((tag) => {
       if (!activeSchemas.hasOwnProperty(tag.schemaName.toUpperCase())) {
         activeSchemas[tag.schemaName.toUpperCase()] = true;
@@ -168,7 +205,7 @@ const DatasetTagger = ({
 
     // Prevent default behaviour
     document.querySelector('#tag-modal-container > div')
-      .addEventListener('click', handleOutsideClick, true);
+      ?.addEventListener('click', handleOutsideClick, true);
 
     return () => {
       document.querySelector('#tag-modal-container > div')
@@ -203,7 +240,7 @@ const DatasetTagger = ({
   const parentNodes = schemaTags.filter((hedTag: HEDSchemaElement) => {
     return hedTag.parentID === null;
   });
-  const inputFieldRef = useRef(null);
+  const inputFieldRef = useRef<HTMLInputElement>(null);
 
   const handleResetAllChanges = () => {
     swal.fire({
@@ -271,7 +308,7 @@ const DatasetTagger = ({
   }
 
   const sortTagsByPlaceholderIDs = (tags: HEDTag[]) => {
-    const sortedIDs = [];
+    const sortedIDs: HEDTag['ID'][] = [];
     tags.forEach((tag) => {
       if (sortedIDs.includes(tag.ID))
         return;   // continue;
@@ -335,21 +372,25 @@ const DatasetTagger = ({
       );
 
       deletedTags.forEach((deletedTag) => {
-        const tagList = updatedDatasetTags[deletedTag.PropertyName][deletedTag.PropertyValue];
-        updatedDatasetTags[deletedTag.PropertyName][deletedTag.PropertyValue] =
+        const propertyName = deletedTag.PropertyName as string;
+        const propertyValue = deletedTag.PropertyValue as string;
+        const tagList = updatedDatasetTags[propertyName][propertyValue];
+        updatedDatasetTags[propertyName][propertyValue] =
           tagList.filter((tag) => {
             return tag.ID !== deletedTag.ID
           });
       })
 
       applyOverrides(addedTags).forEach((addedTag) => {
-        const pairRelTagMapping = response['mapping'].find((mapping) => {
-          return mapping.AddID === addedTag.PairRelID
-        });
+        const pairRelTagMapping = response['mapping'].find(
+          (mapping: TagIDMapping) => {
+            return mapping.AddID === addedTag.PairRelID
+          });
         const addedTagID = addedTag.ID
-        const tagMapping = response['mapping'].find((mapping) => {
-          return mapping.AddID === addedTagID;
-        });
+        const tagMapping = response['mapping'].find(
+          (mapping: TagIDMapping) => {
+            return mapping.AddID === addedTagID;
+          });
         if (tagMapping) {
           addedTag.ID = tagMapping.RelID;
           addedTag.TaggerName = tagMapping.TaggerName;
@@ -357,7 +398,9 @@ const DatasetTagger = ({
           if (pairRelTagMapping) {
             addedTag.PairRelID = pairRelTagMapping.RelID;
           }
-          updatedDatasetTags[addedTag.PropertyName][addedTag.PropertyValue].push(
+          const propertyName = addedTag.PropertyName as string;
+          const propertyValue = addedTag.PropertyValue as string;
+          updatedDatasetTags[propertyName][propertyValue].push(
             addedTag
           );
 
@@ -390,8 +433,10 @@ const DatasetTagger = ({
       });
 
       editedTags.forEach((editedTag) => {
+        const propertyName = editedTag.PropertyName as string;
+        const propertyValue = editedTag.PropertyValue as string;
         const tagInDataset =
-          updatedDatasetTags[editedTag.PropertyName][editedTag.PropertyValue]
+          updatedDatasetTags[propertyName][propertyValue]
             .find((tag) => {
               return tag.ID === editedTag.ID
             })
@@ -400,12 +445,13 @@ const DatasetTagger = ({
           console.error('Unable to find an edited tag!');
           return;
         }
-        const pairRelTagMapping = response['mapping'].find((mapping) => {
-          return mapping.AddID === editedTag.PairRelID
-        });
+        const pairRelTagMapping = response['mapping'].find(
+          (mapping: TagIDMapping) => {
+            return mapping.AddID === editedTag.PairRelID
+          });
 
-        updatedDatasetTags[editedTag.PropertyName][editedTag.PropertyValue] = [
-          ...updatedDatasetTags[editedTag.PropertyName][editedTag.PropertyValue].filter((tag) => {
+        updatedDatasetTags[propertyName][propertyValue] = [
+          ...updatedDatasetTags[propertyName][propertyValue].filter((tag) => {
             return tag.ID !== editedTag.ID;
           }),
           {
@@ -504,7 +550,7 @@ const DatasetTagger = ({
     document
       .querySelector(
         '#tag-modal-container > div > div > div > span'
-      ).addEventListener('click', onModalClose, true);
+      )?.addEventListener('click', onModalClose, true);
 
     return () => {
       document.querySelector(
@@ -521,17 +567,19 @@ const DatasetTagger = ({
   }
 
   const handleAddTag = () => {
-    const tagText = inputFieldRef.current.value.trim();
+    const tagText = inputFieldRef.current?.value.trim() ?? '';
 
     // Validate tag exists
     const hedTagID = validateSearchTag(tagText);
     const newTagID = generateTagID(0);
 
-    if (hedTagID) {
-      const hedTag = schemaTags.find((tag) => {
+    const hedTag = hedTagID
+      ? schemaTags.find((tag) => {
         return tag.id === hedTagID;
       })
+      : undefined;
 
+    if (hedTag) {
       setAddedTags([
         ...addedTags,
         {
@@ -605,7 +653,7 @@ const DatasetTagger = ({
         });
         const tagInGroupedTags = tagFromAdded
           ? updatedGroupedTags.find((tag) => {
-            return tag.ID == tagFromDataset.ID;
+            return tag.ID == tagFromAdded.ID;
           })
           : false;
         if (!tagInGroupedTags && tagFromAdded) {
@@ -620,7 +668,7 @@ const DatasetTagger = ({
     handleHEDMouseLeave();
   }
 
-  const handleTextChange = (e) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
     let fullHEDString = newText;
     const hedTag = schemaTags.find((tag) => {
@@ -632,7 +680,7 @@ const DatasetTagger = ({
     setSearchTextValid(!!validateSearchTag(fullHEDString));
   }
 
-  const handleFieldValueChange = (e) => {
+  const handleFieldValueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setActiveFieldValue(e.target.value);
     setGroupedTags([]);
     tabsRef.current.style.display = 'block';  // overkill - revise
@@ -640,13 +688,15 @@ const DatasetTagger = ({
 
   const setColumnTo = (columnName: string) => {
     setActiveColumnName(columnName);
-    setActiveFieldValue(null);
+    setActiveFieldValue('');
     setSearchText('');
   }
 
-  const handleColumnValueChange = (e) => {
+  const handleColumnValueChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setActiveColumnName(e.target.value);
-    setActiveFieldValue(null);
+    setActiveFieldValue('');
     setSearchText('');
   }
 
@@ -658,7 +708,10 @@ const DatasetTagger = ({
   }
 
   // TODO: Revise this -- Breaks when a comment is present (different from HEDEndorsement)
-  const tagInGroupIsEndorsed = (tag: HEDTag, tagList: HEDTag[]) => {
+  const tagInGroupIsEndorsed = (
+    tag: HEDTag | undefined, tagList: HEDTag[]
+  ): boolean => {
+    if (!tag) return false;
     return tag.Endorsements.length === 0 ||
       tag.Endorsements.every((endorsement) => {
         return endorsement.EndorsementStatus !== 'Endorsed'
@@ -756,11 +809,11 @@ const DatasetTagger = ({
     })
   }
 
-  const handleHEDMouseEnter = (hedTagElement: HEDTag) => {
+  const handleHEDMouseEnter = (hedTagElement?: HEDTag) => {
     if (hedTagElement) {
       setDatasetTooltip({
-        title: hedTagElement.schemaElement.longName,
-        description: hedTagElement.schemaElement.description,
+        title: getSchemaElementName(hedTagElement, true),
+        description: hedTagElement.schemaElement?.description ?? '',
         taggedBy: hedTagElement.TaggedBy,
         taggerName: hedTagElement.TaggerName,
         endorsements: hedTagElement.Endorsements,
@@ -783,7 +836,7 @@ const DatasetTagger = ({
   }
 
   const getGroupedTagPairings = (hedTags: HEDTag[]) => {
-    const tagPairings = [];
+    const tagPairings: HEDTag[] = [];
     if (activeFieldValue) { // null between transitions
       hedTags.forEach((hedTag) => {
         let pairRelID = hedTag.PairRelID;
@@ -829,32 +882,33 @@ const DatasetTagger = ({
      : tags.map(addSchemaElement);
 
     const rootTags = getRootTags(hedTags);
-    const tagBadges = [];
+    const tagBadges: JSX.Element[] = [];
 
     rootTags.forEach((tag) => {
       let groupColorIndex = 0;
       if (tag.PairRelID === null) {
         tagBadges.push(buildHEDBadge(
-          tag.schemaElement.longName, tag.ID.toString(),
+          getSchemaElementName(tag, true), tag.ID.toString(),
           true, tag.TaggerName ===  'Data Authors'
         ));
         groupColorIndex++;
       } else {
-        const tagGroup = [];
-        let groupMember = tag;
+        const tagGroup: HEDTag[] = [];
+        let groupMember: HEDTag | undefined = tag;
         while (groupMember) {
-          tagGroup.push(groupMember);
+          const currentMember: HEDTag = groupMember;
+          tagGroup.push(currentMember);
           groupMember = hedTags.find((hedTag) => {
-            return hedTag.ID === groupMember.PairRelID;
+            return hedTag.ID === currentMember.PairRelID;
           });
         }
 
-        const tagBadgeGroup = [];
-        const tagBadgeSubgroup = [];
+        const tagBadgeGroup: JSX.Element[] = [];
+        const tagBadgeSubgroup: JSX.Element[] = [];
         tagGroup.reverse().map((groupTag: HEDTag) => {
           if (groupTag.PairRelID === null) {
             tagBadgeGroup.push(buildHEDBadge(
-              groupTag.schemaElement.longName, groupTag.ID,
+              getSchemaElementName(groupTag, true), groupTag.ID,
               true, tag.TaggerName ===  'Data Authors'
             ));
           } else {
@@ -873,7 +927,7 @@ const DatasetTagger = ({
                 }
                 if (groupTag.HEDTagID !== null) {
                   tagBadgeGroup.splice(0, 0, buildHEDBadge(
-                    groupTag.schemaElement.longName, groupTag.ID,
+                    getSchemaElementName(groupTag, true), groupTag.ID,
                     true, tag.TaggerName === 'Data Authors'
                   ));
                 }
@@ -890,14 +944,14 @@ const DatasetTagger = ({
                 } else {
                   if (tagBadgeSubgroup.length > 0) {
                     tagBadgeSubgroup.splice(0, 0, buildHEDBadge(
-                      groupTag.schemaElement.longName, groupTag.ID,
+                      getSchemaElementName(groupTag, true), groupTag.ID,
                       true, tag.TaggerName ===  'Data Authors'
                     ));
                     tagBadgeSubgroup.splice(0, 0, buildGroupSpan('(', groupColorIndex));
                     tagBadgeSubgroup.push(buildGroupSpan(')', groupColorIndex));
                   } else {
                     tagBadgeGroup.splice(0, 0, buildHEDBadge(
-                      groupTag.schemaElement.longName, groupTag.ID,
+                      getSchemaElementName(groupTag, true), groupTag.ID,
                       true, tag.TaggerName ===  'Data Authors'
                     ));
                     tagBadgeGroup.splice(0, 0, buildGroupSpan('(', groupColorIndex));
@@ -911,7 +965,7 @@ const DatasetTagger = ({
                 tagBadgeGroup.splice(0, 0, ...tagBadgeSubgroup);
               }
               tagBadgeSubgroup.splice(0, tagBadgeSubgroup.length,
-                buildHEDBadge(groupTag.schemaElement.longName, groupTag.ID,
+                buildHEDBadge(getSchemaElementName(groupTag, true), groupTag.ID,
                 true, tag.TaggerName === 'Data Authors'
               ));
             }
@@ -925,7 +979,7 @@ const DatasetTagger = ({
 
   const buildHEDBadge = (
     text: string,
-    relID: string,
+    relID: string | null,
     isSubmitted: boolean = true,
     taggedByOrigin: boolean = false
   ) => {
@@ -938,9 +992,11 @@ const DatasetTagger = ({
         ? applyOverrides([...addedTags, ...datasetTags[activeColumnName][activeFieldValue]])
         : datasetTags[activeColumnName][activeFieldValue].map(addSchemaElement);
 
-    let hedTagObj = isSubmitted && tagsToSearch.find((tag) => {
-      return tag.ID == relID;
-    });
+    let hedTagObj = isSubmitted
+      ? tagsToSearch.find((tag) => {
+        return tag.ID == relID;
+      })
+      : undefined;
 
     const tagIsGrouped = hedTagObj && hedTagObj.HasPairing == '1' || (
       tagsToSearch.some((tag) => {
@@ -960,8 +1016,9 @@ const DatasetTagger = ({
               return t.ID == tag.ID;
             });
           while (tagObject && (tagObject.PairRelID !== null || tagObject.HasPairing == '1')) {
+            const currentTag = tagObject;
             tagObject = tagsToSearch.find((t) => {
-                return t.ID == tagObject.PairRelID;
+                return t.ID == currentTag.PairRelID;
               });
             if (tagObject && tagObject.ID == relID) {
               return true;
@@ -996,12 +1053,13 @@ const DatasetTagger = ({
               let tagRelID = relID;
               if (tagIsGrouped) {
                 // Find leaf tag
-                let pairRelObj = hedTagObj;
+                let pairRelObj: HEDTag | undefined = hedTagObj;
                 while (pairRelObj !== undefined) {
-                  tagRelID = pairRelObj.ID;
-                  hedTagObj = pairRelObj;
+                  const currentPairRelObj: HEDTag = pairRelObj;
+                  tagRelID = currentPairRelObj.ID;
+                  hedTagObj = currentPairRelObj;
                   pairRelObj = tagsToSearch.find((tag) => {
-                    return tag.PairRelID === pairRelObj.ID;
+                    return tag.PairRelID === currentPairRelObj.ID;
                   });
                 }
               }
@@ -1064,7 +1122,7 @@ const DatasetTagger = ({
     })
     return {
       ...hedTag,
-      schemaElement: schemaElement,
+      schemaElement: schemaElement ?? null,
     };
   }
 
@@ -1103,8 +1161,8 @@ const DatasetTagger = ({
 
   const handleConfirmGroup = () => {
     const updatedGroupTags = applyOverrides(groupedTags);
-    const newTags = [];
-    const tagOverrides = [];
+    const newTags: HEDTag[] = [];
+    const tagOverrides: HEDTag[] = [];
 
     // Tag created before first
     const newTagID = generateTagID(0);
@@ -1159,7 +1217,7 @@ const DatasetTagger = ({
   const handleUndoGroup = () => {
     let firstTag = applyOverrides(groupedTags)[0];
     const tagPairings = getGroupedTagPairings([firstTag]);
-    const tagOverrides = [];
+    const tagOverrides: HEDTag[] = [];
     // Remove pairings
     [firstTag, ...tagPairings].forEach((tag) => {
       tagOverrides.push({
@@ -1183,17 +1241,18 @@ const DatasetTagger = ({
     // TODO: IF REL SAME AS OG, DELETE FROM REL
   }
 
-  const handleSchemaFieldClick = (key, action) => {
+  const handleSchemaFieldClick = (key: string, action: string) => {
     setActiveHEDSchemas({
       ...activeHEDSchemas,
       [key]: action === 'check'
     });
   }
 
-  const handleToggleAllSchemas = (action) => {
+  const handleToggleAllSchemas = (action: string) => {
     const active = action === 'check';
     setActiveHEDSchemas(
-      Object.keys(activeHEDSchemas).reduce((schemas, schema) => {
+      Object.keys(activeHEDSchemas).reduce<Record<string, boolean>>(
+        (schemas, schema) => {
         return {
           ...schemas,
           [schema]: active
@@ -1203,7 +1262,7 @@ const DatasetTagger = ({
   }
 
   const convertDatasetTagsToJSON = () => {
-    const assembledHEDTags = {};
+    const assembledHEDTags: Record<string, Record<string, any>> = {};
 
     // Add channel delimiter
     if (channelDelimiter.length > 0) {
@@ -1255,7 +1314,7 @@ const DatasetTagger = ({
     return assembledHEDTags;
   }
 
-  const downloadEventsJSON = (e) => {
+  const downloadEventsJSON = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const jsonString = JSON.stringify(
       convertDatasetTagsToJSON(),
       undefined,
@@ -1266,6 +1325,10 @@ const DatasetTagger = ({
   }
 
   const submitHEDEndorsement = () => {
+    const endorsementStatus = activeEndorsementMenuItem.action;
+    if (endorsementStatus === 'Select') {
+      return;
+    }
     setSubmittingChanges(true);
     const url = window.location.origin +
       '/electrophysiology_browser/events/';
@@ -1275,8 +1338,8 @@ const DatasetTagger = ({
       physioFileID: physioFileID,
       property_name: activeColumnName,
       property_value: activeFieldValue,
-      endorsement_status: activeEndorsementMenuItem.action,
-      endorsement_comment: activeEndorsementMenuItem.action === 'Comment'
+      endorsement_status: endorsementStatus,
+      endorsement_comment: endorsementStatus === 'Comment'
         ? activeEndorsementMenuItem.commentText
         : null
     };
@@ -1296,7 +1359,7 @@ const DatasetTagger = ({
         EndorsedBy: response.endorsedBy,
         EndorsedByID: response.endorsedByID,
         EndorsementComment: activeEndorsementMenuItem.commentText,
-        EndorsementStatus: activeEndorsementMenuItem.action,
+        EndorsementStatus: endorsementStatus,
         EndorsementTime: response.endorsementTime,
       };
 
@@ -1855,7 +1918,8 @@ const DatasetTagger = ({
                                         .filter((hedTag) => {
                                           return hedTag.Endorsements.length > 0;
                                         })
-                                        .reduce((endorsements, hedTag) => {
+                                        .reduce<HEDEndorsement[]>(
+                                          (endorsements, hedTag) => {
                                           const uniqueEndorsements = hedTag.Endorsements
                                             .filter((endorsement) => {
                                               return !endorsements.find(
@@ -1871,7 +1935,8 @@ const DatasetTagger = ({
                                           ];
                                         }, [])
                                         .sort((a, b) =>
-                                          a.EndorsementTime - b.EndorsementTime
+                                          a.EndorsementTime
+                                            .localeCompare(b.EndorsementTime)
                                         )
                                         .map((endorsement) => {
                                           return (
@@ -2146,7 +2211,8 @@ const DatasetTagger = ({
                       }}
                     >
                       {
-                        Object.keys(TagAction).map((tagAction, i) => {
+                        (Object.keys(TagAction) as TagActionName[])
+                          .map((tagAction, i) => {
                           return (
                             <li
                               key={`endorsement-${TagAction[tagAction].icon}-${i}`}
@@ -2155,7 +2221,10 @@ const DatasetTagger = ({
                                   ...activeEndorsementMenuItem,
                                   action: tagAction,
                                 })
-                                endorsementMenuRef.current.style.display = 'none';
+                                if (endorsementMenuRef.current) {
+                                  endorsementMenuRef.current
+                                    .style.display = 'none';
+                                }
                               }}>
                               {
                                 TagAction[tagAction].icon && (
@@ -2219,7 +2288,8 @@ const DatasetTagger = ({
                               return tag.PropertyName === activeColumnName &&
                                 tag.PropertyValue === activeFieldValue;
                             }) && (
-                              activeColumnName && activeFieldValue &&
+                              activeColumnName.length > 0 &&
+                              activeFieldValue.length > 0 &&
                               !datasetTags[activeColumnName][activeFieldValue].some((tag) => {
                                 return relOverrides.map((relOverride) => {
                                   return relOverride.ID;

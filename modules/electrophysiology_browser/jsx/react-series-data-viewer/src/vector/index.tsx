@@ -1,6 +1,6 @@
-import {vec2, glMatrix} from 'gl-matrix';
+import {vec2} from 'gl-matrix';
 
-export type Vector2 = typeof glMatrix.ARRAY_TYPE;
+export type Vector2 = vec2;
 
 /**
  * Apply transformation f on point p

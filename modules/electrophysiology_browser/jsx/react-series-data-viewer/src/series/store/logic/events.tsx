@@ -7,7 +7,9 @@ import {SeriesEvent, HEDSchemaElement, HEDTag} from '../types';
  * @param {[number, number]} interval - Time interval to search
  * @returns {number[]} Indices of events in the interval
  */
-export const getEventsInRange = (events, interval) => {
+export const getEventsInRange = (
+  events: SeriesEvent[], interval: [number, number]
+) => {
   return [...Array(events.length).keys()].filter((index) =>
     (
       (isNaN(events[index].onset) && interval[0] === 0)
@@ -29,9 +31,11 @@ export const getEventsInRange = (events, interval) => {
  * @returns {HEDTag[]} Dataset HED tags associated with the event
  */
 export const getTagsForEvent = (
-  event: SeriesEvent, datasetTags: any, hedSchema: HEDSchemaElement[]
+  event: SeriesEvent,
+  datasetTags: Record<string, Record<string, HEDTag[]>>,
+  hedSchema: HEDSchemaElement[]
 ) => {
-  const hedTags = [];
+  const hedTags: HEDTag[] = [];
 
   // if (datasetTags['EventValue'].hasOwnProperty(event.label)) {
   //   hedTags.push(...datasetTags['EventValue'][event.label])
@@ -103,6 +107,23 @@ const getNthMemberTrailingCommaIndex = (tagString: string, n: number) => {
 };
 
 /**
+ * getSchemaElementName
+ *
+ * Tags that are not backed by a HED schema element, such as the tags used to
+ * group other tags together, have no name and yield an empty string.
+ *
+ * @param {HEDTag} tag - A HED tag
+ * @param {boolean} longFormHED - Uses the long form of the name if true
+ * @returns {string} - The name of the schema element of the tag
+ */
+export const getSchemaElementName = (
+  tag: HEDTag, longFormHED: boolean
+): string =>
+  longFormHED
+    ? tag.schemaElement?.longName ?? ''
+    : tag.schemaElement?.name ?? '';
+
+/**
  * buildHEDString
  *
  * @param {HEDTag[]} hedTags - List of HED tags
@@ -116,24 +137,24 @@ export const buildHEDString = (hedTags: HEDTag[], longFormHED = false) => {
     });
   });
 
-  const tagNames = [];
+  const tagNames: string[] = [];
   let tagString = '';
   rootTags.forEach((tag: HEDTag) => {
-    const tagGroup = [];
-    let groupMember = tag;
+    const tagGroup: HEDTag[] = [];
+    let groupMember: HEDTag | undefined = tag;
     while (groupMember) {
-      tagGroup.push(groupMember);
+      const currentMember: HEDTag = groupMember;
+      tagGroup.push(currentMember);
       groupMember = hedTags.find((hedTag: HEDTag) => {
-        return hedTag.ID === groupMember.PairRelID;
+        return hedTag.ID === currentMember.PairRelID;
       });
     }
 
     let subGroupString = '';
     tagGroup.reverse().forEach((groupTag: HEDTag) => {
+      const tagName = getSchemaElementName(groupTag, longFormHED);
       if (groupTag.PairRelID === null) {
-        tagString = longFormHED
-          ? groupTag.schemaElement.longName
-          : groupTag.schemaElement.name;
+        tagString = tagName;
       } else {
         if (groupTag.HasPairing == '1') {
           if (groupTag.AdditionalMembers > 0 || subGroupString.length === 0) {
@@ -146,10 +167,7 @@ export const buildHEDString = (hedTags: HEDTag[], longFormHED = false) => {
             tagString = '(' +
               (
                 groupTag.HEDTagID !== null
-                  ? `${longFormHED
-                    ? groupTag.schemaElement.longName
-                    : groupTag.schemaElement.name
-                  }, `
+                  ? `${tagName}, `
                   : ''
               ) +
               (subGroupString.length > 0 ? `${subGroupString}, ` : '') +
@@ -166,15 +184,9 @@ export const buildHEDString = (hedTags: HEDTag[], longFormHED = false) => {
               }
             } else {
               if (subGroupString.length > 0) {
-                subGroupString = `(${longFormHED
-                  ? groupTag.schemaElement.longName
-                  : groupTag.schemaElement.name
-                }, ${subGroupString})`;
+                subGroupString = `(${tagName}, ${subGroupString})`;
               } else {
-                tagString = `(${longFormHED
-                  ? groupTag.schemaElement.longName
-                  : groupTag.schemaElement.name
-                }, ${tagString})`;
+                tagString = `(${tagName}, ${tagString})`;
               }
             }
           }
@@ -182,9 +194,7 @@ export const buildHEDString = (hedTags: HEDTag[], longFormHED = false) => {
           if (subGroupString.length > 0) {
             tagString = `${subGroupString}, ${tagString}`;
           }
-          subGroupString = longFormHED
-            ? groupTag.schemaElement.longName
-            : groupTag.schemaElement.name;
+          subGroupString = tagName;
         }
       }
     });

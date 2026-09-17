@@ -10,7 +10,7 @@ import {HEDSchemaElement, HEDTag} from '../store/types';
 
 export type HEDState = {
   hedSchema: HEDSchemaElement[],
-  datasetTags: any,
+  datasetTags: Record<string, Record<string, HEDTag[]>>,
   relOverrides: HEDTag[],
   addedTags: HEDTag[],
   deletedTags: HEDTag[],
@@ -18,7 +18,9 @@ export type HEDState = {
 };
 
 type HEDContextValue = HEDState & {
-  setDatasetTags: React.Dispatch<React.SetStateAction<any>>,
+  setDatasetTags: React.Dispatch<React.SetStateAction<
+    Record<string, Record<string, HEDTag[]>>
+  >>,
   setRelOverrides: React.Dispatch<React.SetStateAction<HEDTag[]>>,
   setAddedTags: React.Dispatch<React.SetStateAction<HEDTag[]>>,
   setDeletedTags: React.Dispatch<React.SetStateAction<HEDTag[]>>,
