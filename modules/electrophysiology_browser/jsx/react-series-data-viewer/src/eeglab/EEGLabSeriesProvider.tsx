@@ -14,7 +14,7 @@ import {fetchJSON, fetchText} from '../ajax';
 import {rootEpic, rootReducer} from '../series/store';
 import {emptyChannels, setChannels} from '../series/store/state/channels';
 import {
-  DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS, DEFAULT_TIME_INTERVAL,
+  DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS,
 } from '../vector';
 import {
   setDatasetMetadata,
@@ -24,7 +24,6 @@ import {
   setHedSchemaDocument,
   setPhysioFileID,
 } from '../series/store/state/dataset';
-import {setDomain, setInterval} from '../series/store/state/bounds';
 import {
   ChannelInfo, ChannelInfos, ChannelMetadata, CoordinateSystem, EventMetadata,
   HEDSchemaElement, Sensor,
@@ -35,6 +34,7 @@ import {InfoIcon} from '../series/components/components';
 import {
   parseElectrodes, parseMegSensors, parseHeadShapePoints,
 } from '../series/store/logic/montage';
+import {IntervalProvider} from '../series/IntervalContext';
 
 declare global {
   interface Window {
@@ -392,8 +392,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             Math.min(this.props.limit, channelMetadata.length),
             1
           )));
-          this.store.dispatch(setDomain(timeInterval));
-          this.store.dispatch(setInterval(DEFAULT_TIME_INTERVAL));
         }
       }
     ).then(() => {
@@ -530,10 +528,11 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
 
     return (
       <Provider store={this.store}>
-        <div id='tag-modal-container'>
-          <TriggerableModal
-            title={
-              <>
+        <IntervalProvider>
+          <div id='tag-modal-container'>
+            <TriggerableModal
+              title={
+                <>
                 <div
                   style={{
                     display: 'flex',
@@ -613,29 +612,30 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
                     }
                   </ul>
                 </div>
-              </>
-            }
-            label={t(
-              'Open Dataset Tag Manager',
-              {ns: 'electrophysiology_browser'}
-            )}
-          >
-            <DatasetTagger
-              tabsRef={this.state.datasetTaggerTabsRef}
-              activeMenuTab={this.state.activeMenuOption}
-              setActiveMenuTab={(menuOption) => {
-                this.setState({activeMenuOption: menuOption});
-              }}
-              filenamePrefix={this.props.chunksURL[0]
-                .split('/').at(-1) // filename
-                .split('_').slice(0, -1) // prefix
-                .join('_')
+                </>
               }
-            />
-          </TriggerableModal>
-        </div>
-        {signalViewer}
-        {rest}
+              label={t(
+                'Open Dataset Tag Manager',
+                {ns: 'electrophysiology_browser'}
+              )}
+            >
+              <DatasetTagger
+                tabsRef={this.state.datasetTaggerTabsRef}
+                activeMenuTab={this.state.activeMenuOption}
+                setActiveMenuTab={(menuOption) => {
+                  this.setState({activeMenuOption: menuOption});
+                }}
+                filenamePrefix={this.props.chunksURL[0]
+                  .split('/').at(-1) // filename
+                  .split('_').slice(0, -1) // prefix
+                  .join('_')
+                }
+              />
+            </TriggerableModal>
+          </div>
+          {signalViewer}
+          {rest}
+        </IntervalProvider>
       </Provider>
     );
   }

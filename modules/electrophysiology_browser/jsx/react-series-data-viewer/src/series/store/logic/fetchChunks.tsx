@@ -6,7 +6,6 @@ import {createAction} from 'redux-actions';
 import {setDatasetMetadata, State as DatasetState} from '../state/dataset';
 import {Filter} from '../state/filters';
 import {Channel, Chunk} from '../types';
-import {State as BoundsState} from '../state/bounds';
 import {fetchChunk} from '../../../chunks';
 import {MAX_VIEWED_CHUNKS} from '../../../vector';
 import {setChannels} from '../state/channels';
@@ -126,7 +125,14 @@ export const fetchChunkAt = R.memoizeWith(
   }
 );
 
-type State = {bounds: BoundsState, dataset: DatasetState, channels: Channel[]};
+type Interval = [number, number];
+
+type Viewport = {
+  domain: Interval,
+  interval: Interval,
+};
+
+type State = {dataset: DatasetState, channels: Channel[]};
 
 const UPDATE_DEBOUNCE_TIME = 100;
 
@@ -142,10 +148,14 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
 ) => {
   return action$.pipe(
     ofType(UPDATE_VIEWED_CHUNKS),
+    Rx.map((action: {payload: Viewport}): Viewport => action.payload),
     Rx.withLatestFrom(state$),
-    Rx.map(([, state]) => fromState(state)),
+    Rx.map(([viewport, state]: [Viewport, any]) => ({
+      viewport,
+      ...fromState(state),
+    })),
     Rx.debounceTime(UPDATE_DEBOUNCE_TIME),
-    Rx.concatMap(({bounds, dataset, channels}) => {
+    Rx.concatMap(({viewport, dataset, channels}) => {
       const {chunksURL, shapes, validSamples, timeInterval, limit} = dataset;
       if (!chunksURL) {
         return of();
@@ -173,11 +183,11 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
 
                   const i0 =
                     (filledChunks *
-                      Math.floor(bounds.interval[0] - bounds.domain[0])
+                      Math.floor(viewport.interval[0] - viewport.domain[0])
                     ) / recordingDuration;
                   const i1 =
                     (filledChunks *
-                      Math.ceil(bounds.interval[1] - bounds.domain[0])
+                      Math.ceil(viewport.interval[1] - viewport.domain[0])
                     ) / recordingDuration;
                   return {
                     interval:
@@ -219,7 +229,7 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
                     ((chunkIndex + 1) / filledChunks) *
                     (timeInterval[1] - timeInterval[0]),
                   ];
-                  if (chunkInterval[0] <= bounds.interval[1]) {
+                  if (chunkInterval[0] <= viewport.interval[1]) {
                     return fetchChunkAt(
                       chunksURL,
                       finestChunks.downsampling,

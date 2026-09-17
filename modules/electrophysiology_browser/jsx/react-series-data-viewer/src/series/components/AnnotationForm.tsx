@@ -22,12 +22,12 @@ import {InfoIcon} from "./components";
 import {colorOrder} from "../../color";
 import {useTranslation} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
+import {useInterval} from '../IntervalContext';
 
 
 type CProps = {
   timeSelection?: [number, number],
   epochs: EpochType[],
-  domain: [number, number],
   filteredEpochs: number[],
   setTimeSelection: (_: [number, number]) => void,
   setRightPanel: (_: RightPanel) => void,
@@ -37,7 +37,6 @@ type CProps = {
   physioFileID: number,
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
-  interval: [number, number],
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
   channelDelimiter: string,
@@ -52,7 +51,6 @@ type CProps = {
  * @param root0
  * @param root0.timeSelection
  * @param root0.epochs
- * @param root0.domain
  * @param root0.setTimeSelection
  * @param root0.setRightPanel
  * @param root0.setEpochs
@@ -61,7 +59,6 @@ type CProps = {
  * @param root0.physioFileID
  * @param root0.toggleEpoch,
  * @param root0.updateActiveEpoch,
- * @param root0.interval
  * @param root0.hedSchema
  * @param root0.datasetTags
  * @param root0.channelDelimiter
@@ -73,7 +70,6 @@ type CProps = {
 const AnnotationForm = ({
   timeSelection,
   epochs,
-  domain,
   setTimeSelection,
   setRightPanel,
   setEpochs,
@@ -82,7 +78,6 @@ const AnnotationForm = ({
   physioFileID,
   toggleEpoch,
   updateActiveEpoch,
-  interval,
   hedSchema,
   datasetTags,
   channelDelimiter,
@@ -91,6 +86,7 @@ const AnnotationForm = ({
   eventChannels,
   setEventChannels,
 }: CProps) => {
+  const {domain, interval} = useInterval();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);
   const [eventInterval, setEventInterval] = useState<(number | string)[]>(
@@ -1627,10 +1623,8 @@ export default connect(
     physioFileID: state.dataset.physioFileID,
     timeSelection: state.timeSelection,
     epochs: state.dataset.epochs,
-    domain: state.bounds.domain,
     filteredEpochs: state.dataset.filteredEpochs.plotVisibility,
     currentAnnotation: state.currentAnnotation,
-    interval: state.bounds.interval,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,

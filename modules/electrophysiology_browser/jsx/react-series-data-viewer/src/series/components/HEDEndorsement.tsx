@@ -7,20 +7,18 @@ import {setTimeSelection} from '../store/state/timeSelection';
 import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {RootState} from '../store';
-import {setInterval} from '../store/state/bounds';
 import Panel from './Panel';
 import {setEpochs} from "../store/state/dataset";
 import {useTranslation} from "react-i18next";
+import {useInterval} from '../IntervalContext';
 
 type CProps = {
   timeSelection?: [number, number],
   epochs: EpochType[],
-  domain: [number, number],
   setCurrentAnnotation: (_: EpochType) => void,
   updateActiveEpoch: (_: number) => void,
   setTimeSelection: (_: [number, number]) => void,
   setRightPanel: (_: RightPanel) => void,
-  setInterval: (_: [number, number]) => void,
   setEpochs: (_: EpochType[]) => void,
   activeEpoch: number,
   viewerHeight: number,
@@ -37,8 +35,6 @@ type CProps = {
  * @param root0.setCurrentAnnotation
  * @param root0.setTimeSelection
  * @param root0.setRightPanel
- * @param root0.domain
- * @param root0.setInterval
  * @param root0.setEpochs
  * @param root0.activeEpoch
  * @param root0.viewerHeight
@@ -52,8 +48,6 @@ const HEDEndorsement = ({
   setTimeSelection,
   updateActiveEpoch,
   setRightPanel,
-  domain,
-  setInterval,
   setEpochs,
   activeEpoch,
   viewerHeight,
@@ -61,6 +55,7 @@ const HEDEndorsement = ({
   canEndorse,
   pressedKey,
 }: CProps) => {
+  const {domain, setInterval} = useInterval();
 
   const HEDFilter = {
     NO_FILTER: 'No Filter',
@@ -1954,9 +1949,7 @@ HEDEndorsement.defaultProps = {};
 export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
-    domain: state.bounds.domain,
     rightPanel: state.rightPanel,
-    interval: state.bounds.interval,
     viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
@@ -1979,10 +1972,6 @@ export default connect(
     setRightPanel: R.compose(
       dispatch,
       setRightPanel
-    ),
-    setInterval: R.compose(
-      dispatch,
-      setInterval
     ),
     setEpochs: R.compose(
       dispatch,

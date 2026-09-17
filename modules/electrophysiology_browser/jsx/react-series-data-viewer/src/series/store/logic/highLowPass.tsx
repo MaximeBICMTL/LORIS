@@ -3,7 +3,6 @@ import {Observable} from 'rxjs';
 import * as Rx from 'rxjs/operators';
 import {ofType} from 'redux-observable';
 import {createAction} from 'redux-actions';
-import {updateViewedChunks} from './fetchChunks';
 import {setFilter} from '../state/filters';
 import {DifferenceEquationSignal1D}
   from '../../../libs/DifferenceEquationSignal1D';
@@ -272,7 +271,6 @@ export const createLowPassFilterEpic = () => (
         LOW_PASS_FILTERS[payload].coefficients[samplingFrequency]
       ),
     }));
-    dispatch(updateViewedChunks());
   })
 );
 
@@ -432,6 +430,5 @@ export const createHighPassFilterEpic = () => (
         HIGH_PASS_FILTERS[payload].coefficients[samplingFrequency]
       ),
     }));
-    dispatch(updateViewedChunks());
   })
 );

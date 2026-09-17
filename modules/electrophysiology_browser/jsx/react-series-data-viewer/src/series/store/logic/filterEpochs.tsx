@@ -32,8 +32,8 @@ export const createFilterEpochsEpic = (fromState: (_: any) => any) => (
     ofType(UPDATE_FILTERED_EPOCHS),
     Rx.map(R.prop('payload')),
     Rx.withLatestFrom(state$),
-    Rx.map(([, state]) => {
-      const {interval, epochs, filteredEpochs} = fromState(state);
+    Rx.map(([interval, state]) => {
+      const {epochs, filteredEpochs} = fromState(state);
       let newFilteredEpochs = [...Array(epochs.length).keys()]
         .filter((index) =>
           epochs[index].onset + epochs[index].duration > interval[0]
@@ -372,4 +372,3 @@ export const getRootTags = (tags: HEDTag[]) => {
       });
   });
 };
-

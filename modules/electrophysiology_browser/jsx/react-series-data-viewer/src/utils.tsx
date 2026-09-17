@@ -60,6 +60,13 @@ export function computeMean(values: Float32Array): number {
 }
 
 /**
+ * Round a time value to the requested decimal precision.
+ */
+export function roundTime(value: number, decimals = 3): number {
+  return Number(Math.round(Number(value + 'e' + decimals)) + 'e-' + decimals);
+}
+
+/**
  * Normalize a channel unit for visualization.
  */
 export function normalizeUnit(unit: string): string {

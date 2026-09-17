@@ -4,7 +4,6 @@ import * as Rx from 'rxjs/operators';
 import {ofType} from 'redux-observable';
 import {createAction} from 'redux-actions';
 import {setAmplitudeScale} from '../state/bounds';
-import {updateViewedChunks} from './fetchChunks';
 import {State} from '../state/dataset';
 
 export const SET_AMPLITUDES_SCALE = 'SET_AMPLITUDES_SCALE';
@@ -33,7 +32,6 @@ export const createScaleAmplitudesEpic = (fromState: (_: any) => number) => (
 
       return (dispatch) => {
         dispatch(setAmplitudeScale(scale * amplitudeScale));
-        dispatch(updateViewedChunks());
       };
     })
   );
@@ -52,7 +50,6 @@ export const createResetAmplitudesEpic = () => (
     Rx.map(() => {
       return (dispatch) => {
         dispatch(setAmplitudeScale());
-        dispatch(updateViewedChunks());
       };
     })
   );

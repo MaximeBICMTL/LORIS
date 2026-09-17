@@ -59,14 +59,12 @@ import {
 import {
   setViewerWidth,
   setViewerHeight,
-  setInterval,
 } from '../store/state/bounds';
 import {
   continueDragSelection,
   endDragSelection,
   startDragSelection,
 } from '../store/logic/timeSelection';
-
 import {
   Channel,
   Cursor,
@@ -83,12 +81,13 @@ import {useTranslation} from "react-i18next";
 import ChannelTypesSelector from './ChannelTypesSelector';
 import Pagination from './Pagination';
 import {SET_CHANNELS} from '../store/state/channels';
-import {UPDATE_VIEWED_CHUNKS} from '../store/logic/fetchChunks';
+import {updateViewedChunks} from '../store/logic/fetchChunks';
 import {ChannelInfosContext, ChannelMetasContext, HoveredChannelsContext} from '../../eeglab/EEGLabSeriesProvider';
 import {computePercentileRange, computeMean} from '../../utils';
 import MutableKeyDepCache from '../../MutableDepCache';
 import {ImagingGatewayCapabilitiesContext}
   from '../../../../ImagingGatewayCapabilities';
+import {useInterval} from '../IntervalContext';
 
 /**
  * The state of a channel type.
@@ -143,8 +142,6 @@ type CProps = {
   ref: MutableRefObject<any>,
   viewerWidth: number,
   viewerHeight: number,
-  interval: [number, number],
-  domain: [number, number],
   amplitudeScale: number,
   rightPanel: RightPanel,
   timeSelection?: [number, number],
@@ -161,12 +158,11 @@ type CProps = {
   setViewerWidth: (_: number) => void,
   setViewerHeight: (_: number) => void,
   setDatasetMetadata: (_: { limit: number }) => void,
-  dragStart: (_: number) => void,
-  dragContinue: (_: number) => void,
+  dragStart: (_: {position: number, interval: [number, number]}) => void,
+  dragContinue: (_: {position: number, interval: [number, number]}) => void,
   dragEnd: (_: number) => void,
   limit: number,
   loadedChannels: number,
-  setInterval: (_: [number, number]) => void,
   setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   updateActiveEpoch: (_: number) => void,
@@ -180,9 +176,6 @@ type CProps = {
 const SeriesRenderer: FunctionComponent<CProps> = ({
   viewerHeight,
   viewerWidth,
-  interval,
-  setInterval,
-  domain,
   amplitudeScale,
   rightPanel,
   timeSelection,
@@ -210,6 +203,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   updateActiveEpoch,
   setTimeSelection,
 }) => {
+    const {domain, interval, setInterval} = useInterval();
     const [
         numDisplayedChannels,
         setNumDisplayedChannels,
@@ -392,7 +386,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     }
 
     store.dispatch(createAction(SET_CHANNELS)(channels));
-    store.dispatch(createAction(UPDATE_VIEWED_CHUNKS)());
+    store.dispatch(updateViewedChunks({domain, interval}));
   }, [displayedChannelIndexes]);
 
   // Function used to update the pagination offset index, with checks to prevent invalid indexes.
@@ -958,7 +952,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       1,
       Math.max(0, (v.pageX - bounds.left)/bounds.width)
     );
-    return (dragContinue)(x);
+    return dragContinue({position: x, interval});
   };
 
   /**
@@ -1399,8 +1393,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                       mouseDown={useCallback((v: Vector2) => {
                         document.addEventListener('mousemove', onMouseMove);
                         document.addEventListener('mouseup', onMouseUp);
-                        R.compose(dragStart, R.nth(0))(v);
-                      }, [bounds])}
+                        dragStart({position: v[0], interval});
+                      }, [bounds, interval])}
                       showOverflow={showOverflow}
                       cssClass={''}
                       domain={domain}
@@ -1624,7 +1618,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 };
 
 SeriesRenderer.defaultProps = {
-  interval: [0.25, 0.75],
   amplitudeScale: 1,
   viewerHeight: 400,
   channels: [],
@@ -1727,7 +1720,6 @@ export default connect(
   (state: RootState)=> ({
     viewerWidth: state.bounds.viewerWidth,
     viewerHeight: state.bounds.viewerHeight,
-    interval: state.bounds.interval,
     amplitudeScale: state.bounds.amplitudeScale,
     rightPanel: state.rightPanel,
     timeSelection: state.timeSelection,
@@ -1738,14 +1730,9 @@ export default connect(
     activeEpoch: state.dataset.activeEpoch,
     limit: state.dataset.limit,
     loadedChannels: state.dataset.loadedChannels,
-    domain: state.bounds.domain,
     physioFileID: state.dataset.physioFileID,
   }),
   (dispatch: (_: any) => void) => ({
-    setInterval: R.compose(
-      dispatch,
-      setInterval
-    ),
     setCursor: R.compose(
       dispatch,
       setCursorInteraction

@@ -8,7 +8,6 @@ import {cursorReducer} from './state/cursor';
 import {panelReducer} from './state/rightPanel';
 import {timeSelectionReducer} from './state/timeSelection';
 import {channelsReducer} from './state/channels';
-import {createDragBoundsEpic} from './logic/dragBounds';
 import {createTimeSelectionEpic} from './logic/timeSelection';
 import {createFetchChunksEpic} from './logic/fetchChunks';
 import {
@@ -38,13 +37,8 @@ export const rootReducer = combineReducers({
 });
 
 export const rootEpic = combineEpics(
-  createDragBoundsEpic(),
-  createTimeSelectionEpic(({bounds, timeSelection}) => {
-    const {interval} = bounds;
-    return {interval, timeSelection};
-  }),
-  createFetchChunksEpic(({bounds, dataset, channels}) => ({
-    bounds,
+  createTimeSelectionEpic(),
+  createFetchChunksEpic(({dataset, channels}) => ({
     dataset,
     channels,
   })),
@@ -55,10 +49,10 @@ export const rootEpic = combineEpics(
   createResetAmplitudesEpic(),
   createLowPassFilterEpic(),
   createHighPassFilterEpic(),
-  createFilterEpochsEpic(({bounds, dataset}) => {
-    const {interval} = bounds;
+  createFilterEpochsEpic(({dataset}) => {
     const {epochs} = dataset;
-    return {interval, epochs};
+    const {filteredEpochs} = dataset;
+    return {epochs, filteredEpochs};
   }),
   createToggleEpochEpic(({dataset}) => {
     const {epochs, filteredEpochs} = dataset;

@@ -1,27 +1,16 @@
-import * as R from 'ramda';
-import {connect} from 'react-redux';
-import {
-  startDragInterval,
-  continueDragInterval,
-  endDragInterval,
-} from '../store/logic/dragBounds';
-import {setInterval} from '../store/state/bounds';
 import {Slider, Rail, Handles, Ticks} from 'react-compound-slider';
 import {Handle, Tick} from './components';
-import React, {useState, FunctionComponent, useRef} from 'react';
-import {RootState} from '../store';
+import React, {useEffect, useState, FunctionComponent, useRef} from 'react';
 import {DEFAULT_TIME_INTERVAL} from '../../vector';
-import {roundTime} from '../store/logic/timeSelection';
+import {roundTime} from '../../utils';
 import {useTranslation} from "react-i18next";
+import {useInterval} from '../IntervalContext';
 
-type CProps = {
+export type IntervalSelectProps = {
   viewerHeight?: number,
   domain: [number, number],
   interval: [number, number],
-  setInterval: (_: [number, number]) => void,
-  dragStart: (_: [number, number]) => void,
-  dragContinue: (_: [number, number]) => void,
-  dragEnd: (_: [number, number]) => void,
+  onIntervalChange: (_: [number, number]) => void,
 };
 
 /**
@@ -30,22 +19,20 @@ type CProps = {
  * @param root0.viewerHeight
  * @param root0.domain
  * @param root0.interval
- * @param root0.setInterval
- * @param root0.dragStart
- * @param root0.dragContinue
- * @param root0.dragEnd
+ * @param root0.onIntervalChange
  */
-const IntervalSelect: FunctionComponent<CProps> = ({
-  viewerHeight,
+export const IntervalSelect: FunctionComponent<IntervalSelectProps> = ({
+  viewerHeight = 20,
   domain,
   interval,
-  setInterval,
-  dragStart,
-  dragContinue,
-  dragEnd,
+  onIntervalChange,
 }) => {
   const {t} = useTranslation();
-  const [isDragging, setIsDragging] = useState(false);
+  const [sliderInterval, setSliderInterval] = useState(interval);
+
+  useEffect(() => {
+    setSliderInterval(interval);
+  }, [interval]);
 
   const sliderStyle = {
     position: 'relative',
@@ -69,7 +56,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
    */
   const increaseIntervalBy = (increment: number) => {
     const intervalSize = interval[1] - interval[0];
-    setInterval([
+    onIntervalChange([
       Math.min(domain[1] - intervalSize, interval[0] + increment),
       Math.min(domain[1], interval[1] + increment),
     ]);
@@ -81,7 +68,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
    */
   const decreaseIntervalBy = (decrement: number) => {
     const intervalSize = interval[1] - interval[0];
-    setInterval([
+    onIntervalChange([
       Math.max(domain[0], interval[0] - decrement),
       Math.max(domain[0] + intervalSize, interval[1] - decrement),
     ]);
@@ -97,9 +84,9 @@ const IntervalSelect: FunctionComponent<CProps> = ({
     if (isNaN(value)) {
       if (event.target.value === '') {
         if (event.target === lowerBoundInputRef.current) {
-          setInterval([0, interval[1]]);
+          onIntervalChange([0, interval[1]]);
         } else if (event.target === upperBoundInputRef.current) {
-          setInterval([interval[0], 0]);
+          onIntervalChange([interval[0], 0]);
         }
       }
       return;
@@ -115,7 +102,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
       } // do nothing if change causes overlap
 
       // Prevent exceeding max, which causes render
-      setInterval([Math.min(value, domain[1]), interval[1]]);
+      onIntervalChange([Math.min(value, domain[1]), interval[1]]);
     } else if (event.target === upperBoundInputRef.current) {
       if (value < interval[0]) { // This condition causes a swap
         lowerBoundInputRef.current.focus();
@@ -125,7 +112,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
         return;
       } // do nothing if change causes overlap
 
-      setInterval([interval[0], value]);
+      onIntervalChange([interval[0], value]);
     }
   };
 
@@ -137,12 +124,12 @@ const IntervalSelect: FunctionComponent<CProps> = ({
     const value = roundTime(parseFloat(event.target.value));
 
     if (isNaN(value)) {
-      setInterval(interval); // Reset
+      onIntervalChange(interval); // Reset
       return;
     }
 
     if (interval[0] > interval[1] || interval[1] < interval[0]) {
-      setInterval([interval[1], interval[0]]); // Invert
+      onIntervalChange([interval[1], interval[0]]); // Invert
     }
   };
 
@@ -228,7 +215,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                setInterval(DEFAULT_TIME_INTERVAL);
+                onIntervalChange(DEFAULT_TIME_INTERVAL);
               }}
               value={t('Reset', {ns: 'loris'})}
             />
@@ -236,7 +223,7 @@ const IntervalSelect: FunctionComponent<CProps> = ({
               type='button'
               className='btn btn-primary btn-xs'
               onClick={() => {
-                setInterval([domain[0], domain[1]]);
+                onIntervalChange([domain[0], domain[1]]);
               }}
               value={t('Show All', {ns: 'electrophysiology_browser'})}
             />
@@ -248,19 +235,14 @@ const IntervalSelect: FunctionComponent<CProps> = ({
           mode={2}
           rootStyle={sliderStyle}
           domain={[domain[0], domain[1]]}
-          values={[interval[0], interval[1]]}
+          values={sliderInterval}
           onUpdate={(values) => {
-            if (!isDragging) {
-              dragStart([values[0], values[1]]);
-              setIsDragging(true);
-            } else {
-              dragContinue([values[0], values[1]]);
-            }
+            const nextInterval: [number, number] = [values[0], values[1]];
+            setSliderInterval(nextInterval);
+            onIntervalChange(nextInterval);
           }}
           onChange={(values) => {
-            dragStart([values[0], values[1]]);
-            dragEnd([values[0], values[1]]);
-            setIsDragging(false);
+            setSliderInterval([values[0], values[1]]);
           }}
         >
           {/* @ts-ignore */}
@@ -320,33 +302,19 @@ const IntervalSelect: FunctionComponent<CProps> = ({
   );
 };
 
-IntervalSelect.defaultProps = {
-  viewerHeight: 20,
-  domain: [0, 1],
-  interval: [0.25, 0.75],
+const ContextIntervalSelect: FunctionComponent<{
+  viewerHeight?: number,
+}> = ({viewerHeight}) => {
+  const {domain, interval, setInterval} = useInterval();
+
+  return (
+    <IntervalSelect
+      viewerHeight={viewerHeight}
+      domain={domain}
+      interval={interval}
+      onIntervalChange={setInterval}
+    />
+  );
 };
 
-export default connect(
-  (state: RootState) => ({
-    domain: state.bounds.domain,
-    interval: state.bounds.interval,
-  }),
-  (dispatch: (_: any) => void) => ({
-    dragStart: R.compose(
-      dispatch,
-      startDragInterval
-    ),
-    dragContinue: R.compose(
-      dispatch,
-      continueDragInterval
-    ),
-    dragEnd: R.compose(
-      dispatch,
-      endDragInterval
-    ),
-    setInterval: R.compose(
-      dispatch,
-      setInterval
-    ),
-  })
-)(IntervalSelect);
+export default ContextIntervalSelect;

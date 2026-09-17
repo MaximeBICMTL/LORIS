@@ -8,7 +8,6 @@ import {
   toggleEpoch,
   updateActiveEpoch
 } from '../store/logic/filterEpochs';
-import {setInterval} from '../store/state/bounds';
 import {
   Epoch as EpochType,
   EpochFilter,
@@ -26,6 +25,7 @@ import {setFilteredEpochs} from '../store/state/dataset';
 import {CheckboxElement} from './Form';
 import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
+import {useInterval} from '../IntervalContext';
 
 type CProps = {
   timeSelection?: [number, number],
@@ -38,9 +38,6 @@ type CProps = {
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
   setFilteredEpochs: (_: EpochFilter) => void,
-  domain: [number, number],
-  interval: [number, number],
-  setInterval: (_: [number, number]) => void,
   viewerHeight: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
@@ -62,9 +59,6 @@ type CProps = {
  * @param root0.toggleEpoch
  * @param root0.updateActiveEpoch
  * @param root0.setFilteredEpochs
- * @param root0.domain
- * @param root0.interval
- * @param root0.setInterval
  * @param root0.viewerHeight
  * @param root0.hedSchema
  * @param root0.channelDelimiter
@@ -82,9 +76,6 @@ const EventManager = ({
   toggleEpoch,
   updateActiveEpoch,
   setFilteredEpochs,
-  domain,
-  interval,
-  setInterval,
   viewerHeight,
   hedSchema,
   datasetTags,
@@ -93,6 +84,7 @@ const EventManager = ({
   canEdit,
   tagsHaveChanges,
 }: CProps) => {
+  const {domain, interval, setInterval} = useInterval();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);
   const [epochsInRange, setEpochsInRange] = useState(getEpochsInRange(epochs, interval));
@@ -760,8 +752,6 @@ export default connect(
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
     rightPanel: state.rightPanel,
-    domain: state.bounds.domain,
-    interval: state.bounds.interval,
     viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
@@ -793,10 +783,6 @@ export default connect(
     setFilteredEpochs: R.compose(
       dispatch,
       setFilteredEpochs
-    ),
-    setInterval: R.compose(
-      dispatch,
-      setInterval
     ),
   })
 )(EventManager);
