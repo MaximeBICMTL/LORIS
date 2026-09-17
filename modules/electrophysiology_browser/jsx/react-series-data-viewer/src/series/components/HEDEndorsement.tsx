@@ -1,5 +1,4 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {buildHEDString, getRootTags, updateActiveEpoch,} from '../store/logic/filterEpochs';
 import {Epoch as EpochType, HEDTag} from '../store/types';
 import {connect} from 'react-redux';
@@ -11,10 +10,10 @@ import {useTranslation} from "react-i18next";
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
+import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 
 type CProps = {
   epochs: EpochType[],
-  setCurrentAnnotation: (_: EpochType) => void,
   updateActiveEpoch: (_: number) => void,
   setEpochs: (_: EpochType[]) => void,
   activeEpoch: number,
@@ -39,7 +38,6 @@ type CProps = {
  */
 const HEDEndorsement = ({
   epochs,
-  setCurrentAnnotation,
   updateActiveEpoch,
   setEpochs,
   activeEpoch,
@@ -48,6 +46,7 @@ const HEDEndorsement = ({
   canEndorse,
   pressedKey,
 }: CProps) => {
+  const {setCurrentAnnotation} = useCurrentAnnotation();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -1953,10 +1952,6 @@ export default connect(
     activeEpoch: state.dataset.activeEpoch,
   }),
   (dispatch: (_: any) => void) => ({
-    setCurrentAnnotation: R.compose(
-      dispatch,
-      setCurrentAnnotation
-    ),
     updateActiveEpoch: R.compose(
       dispatch,
       updateActiveEpoch

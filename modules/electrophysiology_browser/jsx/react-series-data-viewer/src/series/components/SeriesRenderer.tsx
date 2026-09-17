@@ -48,7 +48,6 @@ import {
   EpochFilter,
   Trace,
 } from '../store/types';
-import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {getEpochsInRange, updateActiveEpoch} from '../store/logic/filterEpochs';
 import HEDEndorsement from "./HEDEndorsement";
 import {useTranslation} from "react-i18next";
@@ -66,6 +65,7 @@ import {usePassFilters} from '../contexts/PassFilterContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useViewedChannels} from '../hooks/useViewedChannels';
 import {useSetCursor} from '../contexts/CursorContext';
+import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 
 /**
  * The state of a channel type.
@@ -124,7 +124,6 @@ type CProps = {
   activeEpoch: number,
   setDatasetMetadata: (_: { limit: number }) => void,
   limit: number,
-  setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   updateActiveEpoch: (_: number) => void,
 };
@@ -139,10 +138,10 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   activeEpoch,
   setDatasetMetadata,
   limit,
-  setCurrentAnnotation,
   physioFileID,
   updateActiveEpoch,
 }) => {
+    const {setCurrentAnnotation} = useCurrentAnnotation();
     const setCursor = useSetCursor();
     const [viewerWidth, setViewerWidth] = useState(400);
     const [viewerHeight, setViewerHeight] = useState(DEFAULT_VIEWER_HEIGHT);
@@ -1683,10 +1682,6 @@ export default connect(
     setDatasetMetadata: R.compose(
       dispatch,
       setDatasetMetadata
-    ),
-    setCurrentAnnotation: R.compose(
-      dispatch,
-      setCurrentAnnotation
     ),
     updateActiveEpoch: R.compose(
       dispatch,

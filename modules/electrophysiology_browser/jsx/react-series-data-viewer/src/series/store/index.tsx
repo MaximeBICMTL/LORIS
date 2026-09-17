@@ -1,7 +1,6 @@
 import {combineReducers} from 'redux';
 import {combineEpics} from 'redux-observable';
 import {datasetReducer} from './state/dataset';
-import {currentAnnotationReducer} from './state/currentAnnotation';
 import {
   createActiveEpochEpic,
   createFilterEpochsEpic,
@@ -10,7 +9,6 @@ import {
 
 export const rootReducer = combineReducers({
   dataset: datasetReducer,
-  currentAnnotation: currentAnnotationReducer,
 });
 
 export const rootEpic = combineEpics(

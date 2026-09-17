@@ -1,5 +1,4 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {MAX_RENDERED_EPOCHS} from '../../vector';
 import {
   buildHEDString,
@@ -25,11 +24,11 @@ import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
+import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 
 type CProps = {
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
-  setCurrentAnnotation: (_: EpochType) => void,
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
   setFilteredEpochs: (_: EpochFilter) => void,
@@ -61,7 +60,6 @@ type CProps = {
 const EventManager = ({
   epochs,
   filteredEpochs,
-  setCurrentAnnotation,
   toggleEpoch,
   updateActiveEpoch,
   setFilteredEpochs,
@@ -73,6 +71,7 @@ const EventManager = ({
   canEdit,
   tagsHaveChanges,
 }: CProps) => {
+  const {setCurrentAnnotation} = useCurrentAnnotation();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -751,10 +750,6 @@ export default connect(
     tagsHaveChanges: state.dataset.tagsHaveChanges,
   }),
   (dispatch: (_: any) => void) => ({
-    setCurrentAnnotation: R.compose(
-      dispatch,
-      setCurrentAnnotation
-    ),
     toggleEpoch: R.compose(
       dispatch,
       toggleEpoch

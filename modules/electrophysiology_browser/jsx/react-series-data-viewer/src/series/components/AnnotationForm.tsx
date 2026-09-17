@@ -10,7 +10,6 @@ import {
 } from '../store/logic/filterEpochs';
 import {RootState} from '../store';
 import {setEpochs} from '../store/state/dataset';
-import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {NumericElement, SelectElement, TextboxElement} from './Form';
 import Panel from './Panel';
 import Modal from 'jsx/Modal';
@@ -23,14 +22,13 @@ import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useTimeWindow} from '../contexts/TimeWindowContext';
 import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
+import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 
 
 type CProps = {
   epochs: EpochType[],
   filteredEpochs: number[],
   setEpochs: (_: EpochType[]) => void,
-  currentAnnotation: EpochType,
-  setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
@@ -64,8 +62,6 @@ type CProps = {
 const AnnotationForm = ({
   epochs,
   setEpochs,
-  currentAnnotation,
-  setCurrentAnnotation,
   physioFileID,
   toggleEpoch,
   updateActiveEpoch,
@@ -77,6 +73,7 @@ const AnnotationForm = ({
   eventChannels,
   setEventChannels,
 }: CProps) => {
+  const {currentAnnotation, setCurrentAnnotation} = useCurrentAnnotation();
   const {setRightPanel} = useRightPanel();
   const {
     recordingTimeRange: domain,
@@ -1609,7 +1606,6 @@ const AnnotationForm = ({
 AnnotationForm.defaultProps = {
   epochs: [],
   filteredEpochs: [],
-  currentAnnotation: null,
   hedSchema: [],
 };
 
@@ -1618,7 +1614,6 @@ export default connect(
     physioFileID: state.dataset.physioFileID,
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs.plotVisibility,
-    currentAnnotation: state.currentAnnotation,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
@@ -1635,10 +1630,6 @@ export default connect(
     setEpochs: R.compose(
       dispatch,
       setEpochs
-    ),
-    setCurrentAnnotation: R.compose(
-      dispatch,
-      setCurrentAnnotation
     ),
   })
 )(AnnotationForm);
