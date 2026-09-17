@@ -98,7 +98,6 @@ export default function TimeWindowControls() {
         <div
           className='col-xs-offset-1 col-xs-11'
           style={{
-            marginBottom: '20px',
             display: 'flex',
             justifyContent: 'center',
             zIndex: '1',
