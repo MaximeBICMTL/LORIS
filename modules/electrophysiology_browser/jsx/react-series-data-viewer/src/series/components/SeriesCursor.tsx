@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import {bisector} from 'd3-array';
 import {colorOrder} from '../../color';
 import {Channel, ChannelMetadata} from '../store/types';
@@ -235,10 +234,16 @@ const SeriesCursor = (
   );
 };
 
-const createIndices = R.memoizeWith(
-  R.identity,
-  (array) => array.map((_, i) => i)
-);
+const indicesByValues = new WeakMap<object, number[]>();
+
+const createIndices = (array) => {
+  let indices = indicesByValues.get(array);
+  if (!indices) {
+    indices = Array.from(array, (_, index) => index);
+    indicesByValues.set(array, indices);
+  }
+  return indices;
+};
 
 /**
  *

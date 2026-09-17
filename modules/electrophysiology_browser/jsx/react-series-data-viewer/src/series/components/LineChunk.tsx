@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import {scaleLinear, ScaleLinear} from 'd3-scale';
 import {vec2} from 'gl-matrix';
 import {Chunk} from '../store/types';
@@ -6,7 +5,19 @@ import {LinePath} from '@visx/shape';
 import {Group} from '@visx/group';
 import {colorOrder} from '../../color';
 
-const LineMemo = R.memoizeWith(
+const memoizeWith = <TArgs extends unknown[], TResult>(
+  createKey: (...args: TArgs) => string,
+  fn: (...args: TArgs) => TResult
+) => {
+  const cache = new Map<string, TResult>();
+  return (...args: TArgs) => {
+    const key = createKey(...args);
+    if (!cache.has(key)) cache.set(key, fn(...args));
+    return cache.get(key) as TResult;
+  };
+};
+
+const LineMemo = memoizeWith(
   ({amplitudeScale, interval, filters,
      channelIndex, traceIndex, chunkIndex,
      isStacked, DCOffset, numChannels,

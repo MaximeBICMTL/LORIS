@@ -9,18 +9,8 @@ To enable the visualization components, set the `useEEGBrowserVisualizationCompo
 
 
 ## Main dependencies
-- [Ramda](https://ramdajs.com)
-A practical functional library for JavaScript programmers.
-
-- [Redux](https://redux.js.org):
-A Predictable State Container for JS Apps
-
 - [Visx](https://airbnb.io/visx):
 A collection of expressive, low-level visualization primitives for React.
-
-- [RxJS](https://rxjs-dev.firebaseapp.com/guide/overview):
-RxJS is a library for composing asynchronous and event-based programs by using observable sequences. 
-It provides one core type, the Observable, satellite types (Observer, Schedulers, Subjects) and operators to allow handling asynchronous events as collections.
 
 - [TypeScript](https://www.typescriptlang.org)
 A static type checker for javascript.
@@ -86,5 +76,3 @@ The current implementation of the Electrode Map supports 2 display modes: 2D and
 
 ### Future developements to come
 A signal annotation feature is currently under development.
-
-

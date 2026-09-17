@@ -1,9 +1,8 @@
-import * as R from 'ramda';
 import {scaleOrdinal} from 'd3-scale';
 import {schemeDark2, schemeCategory10} from 'd3-scale-chromatic';
 
 export const colorOrder = scaleOrdinal(
-  R.concat(schemeDark2, schemeCategory10)
+  [...schemeDark2, ...schemeCategory10]
 );
 
 /**

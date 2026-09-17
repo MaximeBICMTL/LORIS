@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import React, {FunctionComponent} from 'react';
 import {scaleLinear} from 'd3-scale';
 import {withParentSize} from '@visx/responsive';
@@ -105,22 +104,10 @@ const ResponsiveViewer : FunctionComponent<CProps> = ({
       className={cssClass}
       width={parentWidth}
       height={parentHeight}
-      onMouseDown={R.compose(
-        mouseDown,
-        eventToPosition
-      )}
-      onMouseMove={R.compose(
-        mouseMove,
-        eventToPosition
-      )}
-      onMouseUp={R.compose(
-        mouseUp,
-        eventToPosition
-      )}
-      onMouseLeave={R.compose(
-        mouseLeave,
-        eventToPosition
-      )}
+      onMouseDown={(event) => mouseDown?.(eventToPosition(event))}
+      onMouseMove={(event) => mouseMove?.(eventToPosition(event))}
+      onMouseUp={(event) => mouseUp?.(eventToPosition(event))}
+      onMouseLeave={(event) => mouseLeave?.(eventToPosition(event))}
     >
       {layers}
     </svg>
