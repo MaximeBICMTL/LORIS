@@ -748,7 +748,6 @@ export default connect(
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
-    channels: state.channels, // TODO: merge with below and pass?
     tagsHaveChanges: state.dataset.tagsHaveChanges,
   }),
   (dispatch: (_: any) => void) => ({

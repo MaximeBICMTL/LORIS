@@ -3,8 +3,6 @@ import {combineEpics} from 'redux-observable';
 import {datasetReducer} from './state/dataset';
 import {currentAnnotationReducer} from './state/currentAnnotation';
 import {cursorReducer} from './state/cursor';
-import {channelsReducer} from './state/channels';
-import {createFetchChunksEpic} from './logic/fetchChunks';
 import {
   createActiveEpochEpic,
   createFilterEpochsEpic,
@@ -16,14 +14,9 @@ export const rootReducer = combineReducers({
   dataset: datasetReducer,
   currentAnnotation: currentAnnotationReducer,
   cursor: cursorReducer,
-  channels: channelsReducer,
 });
 
 export const rootEpic = combineEpics(
-  createFetchChunksEpic(({dataset, channels}) => ({
-    dataset,
-    channels,
-  })),
   createFilterEpochsEpic(({dataset}) => {
     const {epochs} = dataset;
     const {filteredEpochs} = dataset;

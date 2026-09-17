@@ -89,10 +89,10 @@ function TimeWindowHandle({
         position: 'absolute',
         top: 8,
         left: `${percent}%`,
-        width: 16,
+        width: 11,
         height: 14,
         cursor: 'ew-resize',
-        transform: 'translateX(-50%)',
+        transform: bound === 0 ? 'translateX(-8px)' : 'translateX(-3px)',
         zIndex: 3,
         boxSizing: 'border-box',
         outline: 'none',
@@ -103,7 +103,7 @@ function TimeWindowHandle({
           position: 'absolute',
           top: 0,
           bottom: 0,
-          left: 5,
+          left: bound === 0 ? 5 : 0,
           width: 6,
           borderRadius: '999px 999px 0 0',
           background: '#6f7880',
@@ -156,7 +156,6 @@ export default function TimeWindowSlider({
   const startPercent = timeToPercent(timeWindow[0]);
   const endPercent = timeToPercent(timeWindow[1]);
   const windowWidthPercent = Math.max(0, endPercent - startPercent);
-  const windowMidpointPercent = startPercent + windowWidthPercent / 2;
 
   const clientXToTime = (clientX: number): number => {
     const axis = axisRef.current;
@@ -349,10 +348,9 @@ export default function TimeWindowSlider({
           style={{
             position: 'absolute',
             top: 13,
-            left: `${windowMidpointPercent}%`,
-            width: `max(${windowWidthPercent}%, 18px)`,
+            left: `${startPercent}%`,
+            width: `${windowWidthPercent}%`,
             height: 20,
-            transform: 'translateX(-50%)',
             cursor: 'grab',
             zIndex: 2,
             outline: 'none',

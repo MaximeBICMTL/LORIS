@@ -1622,7 +1622,6 @@ export default connect(
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,
-    channels: state.channels,
   }),
   (dispatch: (any) => void) => ({
     toggleEpoch: R.compose(

@@ -12,7 +12,6 @@ import {createEpicMiddleware} from 'redux-observable';
 import thunk from 'redux-thunk';
 import {fetchJSON, fetchText} from '../ajax';
 import {rootEpic, rootReducer} from '../series/store';
-import {emptyChannels, setChannels} from '../series/store/state/channels';
 import {
   DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS,
 } from '../vector';
@@ -390,10 +389,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
               recordingHasHED,
             })
           );
-          this.store.dispatch(setChannels(emptyChannels(
-            Math.min(this.props.limit, channelMetadata.length),
-            1
-          )));
         }
       }
     ).then(() => {

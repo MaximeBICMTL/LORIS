@@ -2,8 +2,6 @@ import React, {useContext} from 'react';
 import {vec2} from 'gl-matrix';
 import {MIN_EPOCH_WIDTH} from '../../vector';
 import {ScaleLinear} from 'd3-scale';
-import {connect} from "react-redux";
-import {RootState} from "../store";
 import {Channel} from "../store/types";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 
@@ -20,7 +18,7 @@ type CProps = {
   opacity: number,
   minWidth: number,
   epochChannels?: string[],
-  channels: Channel[],
+  displayedChannels: Channel[],
 };
 
 /**
@@ -34,7 +32,7 @@ type CProps = {
  * @param root0.opacity
  * @param root0.minWidth
  * @param root0.epochChannels
- * @param root0.channels
+ * @param root0.displayedChannels
  */
 const Epoch = (
   {
@@ -47,7 +45,7 @@ const Epoch = (
     opacity,
     minWidth,
     epochChannels,
-    channels,
+    displayedChannels,
   }: CProps) => {
   const channelMetadata = useContext(ChannelMetasContext);
 
@@ -70,14 +68,14 @@ const Epoch = (
 
   if (epochChannels && epochChannels.length > 0) {
     const indicesToDraw = epochChannels.map((channelName) => {
-      return channels.findIndex((channel) => {
+      return displayedChannels.findIndex((channel) => {
         return channel.index === channelMetadata.findIndex((channel) => {
           return channel.name === channelName;
         });
       })
     }).filter(index => index !== -1);
 
-    const rectHeight = height / channels.length;
+    const rectHeight = height / displayedChannels.length;
 
     return (
       <React.Fragment key={key}>
@@ -118,7 +116,4 @@ Epoch.defaultProps = {
   minWidth: MIN_EPOCH_WIDTH,
 };
 
-export default connect(
-  (state: RootState)=> ({
-    channels: state.channels,
-  }))(Epoch);
+export default Epoch;

@@ -7,12 +7,9 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {RootState} from '../store';
-import {updateViewedChunks} from '../store/logic/fetchChunks';
 import {DEFAULT_TIME_WINDOW} from '../../vector';
-import {useAmplitude} from './AmplitudeContext';
-import {usePassFilters} from './PassFilterContext';
 import {TimeRange} from './types';
 import {normalizeTimeWindow} from '../timeWindow';
 
@@ -35,12 +32,9 @@ export const TimeWindowProvider: FunctionComponent<{
   const recordingTimeRange = useSelector(
     (state: RootState) => state.dataset.timeInterval
   );
-  const {filters} = usePassFilters();
-  const {amplitudeScale} = useAmplitude();
   const [timeWindow, updateTimeWindow] = useState<TimeRange>(() =>
     normalizeTimeWindow(DEFAULT_TIME_WINDOW, recordingTimeRange)
   );
-  const dispatch = useDispatch();
 
   const setTimeWindow = useCallback((nextTimeWindow: TimeRange) => {
     updateTimeWindow(normalizeTimeWindow(
@@ -55,14 +49,6 @@ export const TimeWindowProvider: FunctionComponent<{
       recordingTimeRange
     ));
   }, [recordingTimeRange]);
-
-  useEffect(() => {
-    dispatch(updateViewedChunks({
-      filters,
-      recordingTimeRange,
-      timeWindow,
-    }));
-  }, [amplitudeScale, dispatch, filters, recordingTimeRange, timeWindow]);
 
   const value = useMemo(() => ({
     recordingTimeRange,

@@ -31,13 +31,12 @@ import Epoch from './Epoch';
 import SeriesCursor from './SeriesCursor';
 import LoadingBar from './LoadingBar';
 import {setDatasetMetadata} from '../store/state/dataset';
-import {createChannelTypesDict, filterDisplayedChannels, filterSelectedChannels, findBidsChannel} from '../store/logic/channels';
+import {createChannelTypesDict, filterSelectedChannels, findBidsChannel} from '../store/logic/channels';
 import TimeWindowControls from './TimeWindowControls';
 import EventManager from './EventManager';
 import AnnotationForm from './AnnotationForm';
 import {TopographicMapButton} from './TopographicMap';
 import {RootState} from '../store';
-import {createAction} from 'redux-actions';
 
 import {
   HighPassFilterSelect,
@@ -57,8 +56,6 @@ import HEDEndorsement from "./HEDEndorsement";
 import {useTranslation} from "react-i18next";
 import ChannelTypesSelector from './ChannelTypesSelector';
 import Pagination from './Pagination';
-import {SET_CHANNELS} from '../store/state/channels';
-import {updateViewedChunks} from '../store/logic/fetchChunks';
 import {ChannelInfosContext, ChannelMetasContext, HoveredChannelsContext} from '../../eeglab/EEGLabSeriesProvider';
 import {computePercentileRange, computeMean} from '../../utils';
 import MutableKeyDepCache from '../../MutableDepCache';
@@ -69,6 +66,7 @@ import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useAmplitude} from '../contexts/AmplitudeContext';
 import {usePassFilters} from '../contexts/PassFilterContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
+import {useViewedChannels} from '../hooks/useViewedChannels';
 
 /**
  * The state of a channel type.
@@ -122,13 +120,11 @@ function compareChannelRangeDeps(a: ChannelRangeCacheDeps, b: ChannelRangeCacheD
 type CProps = {
   ref: MutableRefObject<any>,
   chunksURL: string,
-  channels: Channel[],
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   activeEpoch: number,
   setDatasetMetadata: (_: { limit: number }) => void,
   limit: number,
-  loadedChannels: number,
   setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   updateActiveEpoch: (_: number) => void,
@@ -141,13 +137,11 @@ type CProps = {
 const SeriesRenderer: FunctionComponent<CProps> = ({
   setCursor,
   chunksURL,
-  channels,
   epochs,
   filteredEpochs,
   activeEpoch,
   setDatasetMetadata,
   limit,
-  loadedChannels,
   setCurrentAnnotation,
   physioFileID,
   updateActiveEpoch,
@@ -165,7 +159,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       scaleAmplitude,
       resetAmplitude,
     } = useAmplitude();
-    const {filters, highPass, lowPass, setHighPass, setLowPass} =
+    const {highPass, lowPass, setHighPass, setLowPass} =
       usePassFilters();
     const {
       timeSelection,
@@ -337,30 +331,23 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   ), [bidsChannels, channelMetadata, channelTypes]);
 
   // Indexes of the selected channel indexes for comparison with previous renders.
-  const selectedChannelIndexes = JSON.stringify(selectedChannels.map((channel) => channel.index));
+  const selectedChannelIndexes = useMemo(
+    () => selectedChannels.map((channel) => channel.index),
+    [selectedChannels]
+  );
 
-  // Displayed channels are all the selected channels that are currently displayed on screen.
-  channels = useMemo(() => (
-    filterDisplayedChannels(selectedChannels, offsetIndex, limit, channels)
-  ), [bidsChannels, selectedChannelIndexes, offsetIndex, limit, channels]);
-
-  // Indexes of the displayed channel indexes for comparison with previous renders.
-  const displayedChannelIndexes = JSON.stringify(channels.map((channel) => channel.index));
-
-  // Hack to update the global store whenever displayed channels are updated.
-  useEffect(() => {
-    const store = window.EEGLabSeriesProviderStore[chunksURL];
-    if (store === undefined) {
-      return;
-    }
-
-    store.dispatch(createAction(SET_CHANNELS)(channels));
-    store.dispatch(updateViewedChunks({
-      filters,
-      recordingTimeRange: domain,
-      timeWindow: interval,
-    }));
-  }, [displayedChannelIndexes]);
+  // Displayed channels are the selected channels on the current page.
+  const displayedChannelIndexes = useMemo(
+    () => selectedChannelIndexes.slice(
+      offsetIndex - 1,
+      offsetIndex - 1 + limit
+    ),
+    [selectedChannelIndexes, offsetIndex, limit]
+  );
+  const {channels, loadedChannels} = useViewedChannels(
+    displayedChannelIndexes
+  );
+  const channelsToLoad = displayedChannelIndexes.length;
 
   // Function used to update the pagination offset index, with checks to prevent invalid indexes.
   const updateOffsetIndex = useCallback((newOffsetIndex: number) => {
@@ -658,6 +645,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
               <Epoch
                 key={`epoch-${index}`}
                 {...epochs[index]}
+                displayedChannels={channels}
                 parentHeight={viewerHeight}
                 color={
                   epochs[index]?.channels &&
@@ -676,6 +664,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
         {timeSelection && activeEpoch === null &&
           <Epoch
             key={`epoch-${activeEpoch}`}
+            displayedChannels={channels}
             onset={Math.min(timeSelection[0], timeSelection[1])}
             duration={Math.abs(timeSelection[1] - timeSelection[0])}
             color={'#ff9585'}
@@ -693,6 +682,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
           <Epoch
             key={`epoch-${activeEpoch}`}
             {...epochs[activeEpoch]}
+            displayedChannels={channels}
             parentHeight={viewerHeight}
             scales={scales}
             color={'#fff9d6'}
@@ -1006,22 +996,22 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   }
 
   useEffect(() => {
-    if (loadedChannels < limit) {
+    if (loadedChannels < channelsToLoad) {
       const progressBarRef = document.querySelector<HTMLElement>('#chunk-progress-bar');
       if (progressBarRef && progressBarRef.style.width === '0%') {
         setProgressBarWidth('0%');
       } else if (!loadingBarVisibility) {
-        setProgressBarWidth(`${100 * loadedChannels / limit}%`);
+        setProgressBarWidth(`${100 * loadedChannels / channelsToLoad}%`);
       }
     }
-  }, [loadedChannels]);
+  }, [loadedChannels, channelsToLoad]);
 
 
   useEffect(() => {
-    if (loadedChannels < limit) {
-      setProgressBarWidth(`${100 * loadedChannels / limit}%`);
+    if (loadedChannels < channelsToLoad) {
+      setProgressBarWidth(`${100 * loadedChannels / channelsToLoad}%`);
     }
-  }, [limit]);
+  }, [channelsToLoad]);
 
   const MenuOption = {
     'MANAGE_EVENTS': 'Events',
@@ -1238,7 +1228,9 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                 <LoadingBar
                   t={t}
                   progress={
-                      100 * loadedChannels / Math.min(channels.length, limit)
+                      channelsToLoad === 0
+                        ? 0
+                        : 100 * loadedChannels / channelsToLoad
                   }
                   wrapperStyle={{
                     marginLeft: 'calc(100% / 12 - 10px)',
@@ -1561,6 +1553,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                 rightPanel === 'eventList' &&
                 <EventManager
                   canEdit={canEditEvents}
+                  channels={channels}
                   viewerHeight={viewerHeight}
                 />
               }
@@ -1586,7 +1579,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 };
 
 SeriesRenderer.defaultProps = {
-  channels: [],
   epochs: [],
   limit: DEFAULT_MAX_CHANNELS,
 };
@@ -1685,12 +1677,10 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): Float3
 export default connect(
   (state: RootState)=> ({
     chunksURL: state.dataset.chunksURL,
-    channels: state.channels,
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
     activeEpoch: state.dataset.activeEpoch,
     limit: state.dataset.limit,
-    loadedChannels: state.dataset.loadedChannels,
     physioFileID: state.dataset.physioFileID,
   }),
   (dispatch: (_: any) => void) => ({
