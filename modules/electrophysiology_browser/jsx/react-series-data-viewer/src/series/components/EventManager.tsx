@@ -11,8 +11,6 @@ import {
   HEDSchemaElement,
   Channel
 } from '../store/types';
-import {connect} from 'react-redux';
-import {RootState} from '../store';
 import {CheckboxElement} from './Form';
 import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
@@ -22,14 +20,12 @@ import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
 import {useRecording} from '../contexts/RecordingContext';
+import {useHED} from '../contexts/HEDContext';
 
 type CProps = {
   viewerHeight: number,
-  hedSchema: HEDSchemaElement[],
-  datasetTags: any,
   channels: Channel[],
   canEdit: boolean,
-  tagsHaveChanges: boolean,
 };
 
 /**
@@ -50,13 +46,11 @@ type CProps = {
  */
 const EventManager = ({
   viewerHeight,
-  hedSchema,
-  datasetTags,
   channels,
   canEdit,
-  tagsHaveChanges,
 }: CProps) => {
   const {channelDelimiter} = useRecording();
+  const {hedSchema, datasetTags, tagsHaveChanges} = useHED();
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -733,10 +727,4 @@ const EventManager = ({
 
 EventManager.defaultProps = {};
 
-export default connect(
-  (state: RootState)=> ({
-    hedSchema: state.dataset.hedSchema,
-    datasetTags: state.dataset.datasetTags,
-    tagsHaveChanges: state.dataset.tagsHaveChanges,
-  })
-)(EventManager);
+export default EventManager;

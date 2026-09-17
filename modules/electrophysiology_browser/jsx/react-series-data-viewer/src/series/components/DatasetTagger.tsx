@@ -1,16 +1,13 @@
 import React, {MutableRefObject, useEffect, useRef, useState} from 'react';
-import * as R from 'ramda';
-import {connect} from "react-redux";
-import {RootState} from "../store";
 import {CheckboxElement, SelectDropdown} from './Form';
 import Panel from './Panel'; // Different from jsx/Panel
 import {HEDSchemaElement, HEDTag} from "../store/types";
-import {setAddedTags, setDatasetTags, setDeletedTags, setRelOverrides, setTagsHaveChanges} from "../store/state/dataset";
 import swal from "sweetalert2";
 import {buildHEDString, getNthMemberTrailingBadgeIndex, getRootTags} from "../store/logic/events";
 import {colorOrder} from "../../color";
 import {Trans, useTranslation} from "react-i18next";
 import {useRecording} from '../contexts/RecordingContext';
+import {useHED} from '../contexts/HEDContext';
 
 const TagAction = {
   'Select': {
@@ -36,20 +33,9 @@ const TagAction = {
 }
 
 type CProps = {
-  hedSchema: HEDSchemaElement[],
-  datasetTags: HEDTag,
-  relOverrides: HEDTag[],
-  addedTags: HEDTag[],
-  deletedTags: HEDTag[],
-  setAddedTags: (_: HEDTag[]) => void,
-  setDeletedTags: (_: HEDTag[]) => void,
-  setRelOverrides: (_: HEDTag[]) => void,
-  setDatasetTags: (_: any) => void,
   activeMenuTab: string,
   setActiveMenuTab:  (_: string) => void,
   tabsRef: MutableRefObject<any>,
-  tagsHaveChanges: boolean,
-  setTagsHaveChanges: (_: boolean) => void,
   filenamePrefix: string,
 };
 
@@ -75,23 +61,25 @@ type CProps = {
  * @param root0.filenamePrefix
  */
 const DatasetTagger = ({
-  datasetTags,
-  relOverrides,
-  hedSchema,
-  addedTags,
-  deletedTags,
-  setAddedTags,
-  setDeletedTags,
-  setDatasetTags,
-  setRelOverrides,
   activeMenuTab,
   setActiveMenuTab,
   tabsRef,
-  tagsHaveChanges,
-  setTagsHaveChanges,
   filenamePrefix,
 }: CProps) => {
   const {physioFileID, channelDelimiter} = useRecording();
+  const {
+    hedSchema,
+    datasetTags,
+    relOverrides,
+    addedTags,
+    deletedTags,
+    tagsHaveChanges,
+    setDatasetTags,
+    setRelOverrides,
+    setAddedTags,
+    setDeletedTags,
+    setTagsHaveChanges,
+  } = useHED();
   const tagListID = 'searchable-hed-tags';
   const {t} = useTranslation();
   const [searchText, setSearchText] = useState('');
@@ -334,7 +322,17 @@ const DatasetTagger = ({
       }
       throw (response);
     }).then((response) => {
-      const updatedDatasetTags = datasetTags;
+      const updatedDatasetTags = Object.fromEntries(
+        Object.entries(datasetTags).map(([columnName, columnValues]) => [
+          columnName,
+          Object.fromEntries(
+            Object.entries(columnValues).map(([columnValue, tags]) => [
+              columnValue,
+              [...tags],
+            ])
+          ),
+        ])
+      );
 
       deletedTags.forEach((deletedTag) => {
         const tagList = updatedDatasetTags[deletedTag.PropertyName][deletedTag.PropertyValue];
@@ -1302,16 +1300,17 @@ const DatasetTagger = ({
         EndorsementTime: response.endorsementTime,
       };
 
-      datasetTags[activeColumnName][activeFieldValue] = datasetTags[activeColumnName][activeFieldValue].map((tag) => {
-        return {
-          ...tag,
-          Endorsements: [
-            ...tag.Endorsements,
-            endorsement,
-          ]
-        }
+      setDatasetTags({
+        ...datasetTags,
+        [activeColumnName]: {
+          ...datasetTags[activeColumnName],
+          [activeFieldValue]: datasetTags[activeColumnName][activeFieldValue]
+            .map((tag) => ({
+              ...tag,
+              Endorsements: [...tag.Endorsements, endorsement],
+            })),
+        },
       });
-      setDatasetTags(datasetTags);
       setActiveEndorsementMenuItem({
         action: 'Select',
         commentText: '',
@@ -1840,7 +1839,6 @@ const DatasetTagger = ({
                             </>
                           }
                           initCollapsed={true}
-                          collapsed={true}
                           style={{backgroundColor: 'white',}}
                         >
                           <div>
@@ -2313,35 +2311,4 @@ const DatasetTagger = ({
 
 DatasetTagger.defaultProps = {};
 
-export default connect(
-  (state: RootState) => ({
-    datasetTags: state.dataset.datasetTags,
-    relOverrides: state.dataset.hedRelOverrides,
-    hedSchema: state.dataset.hedSchema,
-    addedTags: state.dataset.addedTags,
-    deletedTags: state.dataset.deletedTags,
-    tagsHaveChanges: state.dataset.tagsHaveChanges,
-  }),
-  (dispatch: (_: any) => void) => ({
-    setAddedTags: R.compose(
-      dispatch,
-      setAddedTags
-    ),
-    setDeletedTags: R.compose(
-      dispatch,
-      setDeletedTags
-    ),
-    setDatasetTags: R.compose(
-      dispatch,
-      setDatasetTags
-    ),
-    setRelOverrides: R.compose(
-      dispatch,
-      setRelOverrides
-    ),
-    setTagsHaveChanges: R.compose(
-      dispatch,
-      setTagsHaveChanges
-    ),
-  })
-)(DatasetTagger);
+export default DatasetTagger;

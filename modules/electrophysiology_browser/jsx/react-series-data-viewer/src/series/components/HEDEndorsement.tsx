@@ -1,8 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {buildHEDString, getRootTags} from '../store/logic/events';
 import {SeriesEvent, HEDTag} from '../store/types';
-import {connect} from 'react-redux';
-import {RootState} from '../store';
 import Panel from './Panel';
 import {useTranslation} from "react-i18next";
 import {useTimeWindow} from '../contexts/TimeWindowContext';
@@ -11,6 +9,7 @@ import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
 import {useRecording} from '../contexts/RecordingContext';
+import {useHED} from '../contexts/HEDContext';
 
 type CProps = {
   viewerHeight: number,
@@ -37,6 +36,7 @@ const HEDEndorsement = ({
   pressedKey,
 }: CProps) => {
   const {physioFileID} = useRecording();
+  const {hedSchema, datasetTags} = useHED();
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -1492,7 +1492,7 @@ const HEDEndorsement = ({
                           }
                           &emsp;
                           {
-                            event.tagGroup.find(
+                            eventEntry.tagGroup.find(
                               tag => tag.Endorsements.some(
                                 endorsement => endorsement.EndorsementComment
                               )
@@ -1504,7 +1504,7 @@ const HEDEndorsement = ({
                             )
                           }
                           {
-                            event.tagGroup.find(
+                            eventEntry.tagGroup.find(
                               tag => tag.Endorsements.some(
                                 endorsement => endorsement.EndorsementStatus === 'Endorsed'
                               )
@@ -1516,7 +1516,7 @@ const HEDEndorsement = ({
                             )
                           }
                           {
-                            event.tagGroup.find(
+                            eventEntry.tagGroup.find(
                               tag => tag.Endorsements.some(
                                 endorsement => endorsement.EndorsementStatus === 'Caveat'
                               )
@@ -1530,12 +1530,11 @@ const HEDEndorsement = ({
                         </>
                       }
                       initCollapsed={true}
-                      collapsed={true}
                       style={{ width: '90%', }}
                     >
                       <div>
                         {
-                          event.tagGroup.some((tag) => {
+                          eventEntry.tagGroup.some((tag) => {
                             return tag.Endorsements.length > 0;
                           }) ? (
                             <ul style={{
@@ -1543,7 +1542,7 @@ const HEDEndorsement = ({
                               marginLeft: '-10px',
                             }}>
                               {
-                                event.tagGroup
+                                eventEntry.tagGroup
                                   .filter((tag) => {
                                     return tag.Endorsements.length > 0;
                                   })
@@ -1698,24 +1697,24 @@ const HEDEndorsement = ({
                               <div>
                               {
                                 openCommentPanels
-                                  .find(panel => panel.ID === event.tagGroup[0].ID)
+                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
                                   ? (
                                     <>
                                       {
                                         TagAction[
                                           openCommentPanels.find(
-                                            panel => panel.ID === event.tagGroup[0].ID
+                                            panel => panel.ID === eventEntry.tagGroup[0].ID
                                           ).tagAction
                                           ].icon && (
                                           <>
                                             <i
                                               className={'glyphicon glyphicon-' +
                                                 TagAction[openCommentPanels
-                                                  .find(panel => panel.ID === event.tagGroup[0].ID).tagAction
+                                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
                                                   ].icon}
                                               style={{ color: TagAction[
                                                   openCommentPanels
-                                                    .find(panel => panel.ID === event.tagGroup[0].ID).tagAction
+                                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
                                                   ].color,
                                               }}
                                             />
@@ -1726,7 +1725,7 @@ const HEDEndorsement = ({
                                       {
                                         t(TagAction[
                                           openCommentPanels
-                                            .find(panel => panel.ID === event.tagGroup[0].ID).tagAction
+                                            .find(panel => panel.ID === eventEntry.tagGroup[0].ID).tagAction
                                           ].text, {
                                           ns: 'electrophysiology_browser'
                                         })
@@ -1762,12 +1761,12 @@ const HEDEndorsement = ({
                                       key={`tag-action-${i}`}
                                       onClick={() => {
                                         const panelFound = openCommentPanels
-                                          .find(panel => panel.ID === event.tagGroup[0].ID);
+                                          .find(panel => panel.ID === eventEntry.tagGroup[0].ID);
 
                                         setOpenCommentPanels([
-                                          ...openCommentPanels.filter(panel => panel.ID !== event.tagGroup[0].ID),
+                                          ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
                                           {
-                                            ID: event.tagGroup[0].ID,
+                                            ID: eventEntry.tagGroup[0].ID,
                                             text: panelFound
                                               ? panelFound.text
                                               : '',
@@ -1777,7 +1776,7 @@ const HEDEndorsement = ({
                                           }
                                         ]);
                                         setTimeout(() => {
-                                          focusCommentWithID(event.tagGroup[0].ID);
+                                          focusCommentWithID(eventEntry.tagGroup[0].ID);
                                         }, 0);
                                       }}>
                                       {
@@ -1800,7 +1799,7 @@ const HEDEndorsement = ({
                           </div>
                           <div>
                             <div
-                              id={`hed-endorsement-alert-${event.tagGroup[0].ID}`}
+                              id={`hed-endorsement-alert-${eventEntry.tagGroup[0].ID}`}
                               className="alert alert-success text-center"
                               role="alert"
                               style={{
@@ -1818,25 +1817,25 @@ const HEDEndorsement = ({
                       )
                     }
                     {
-                      canEndorse && openCommentPanels.find(panel => panel.ID === event.tagGroup[0].ID) &&
+                      canEndorse && openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID) &&
                       openCommentPanels
-                        .find(panel => panel.ID === event.tagGroup[0].ID)
+                        .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
                         .isOpen && (
                           <div
                             style={{ marginBottom: '5px', }}
                           >
                             {
                               openCommentPanels.find(
-                                panel => panel.ID === event.tagGroup[0].ID
+                                panel => panel.ID === eventEntry.tagGroup[0].ID
                               ).activePanel === 'Comment' && (
                                 <textarea
-                                  id={`hed-endorsement-comment-${event.tagGroup[0].ID}`}
-                                  value={openCommentPanels.find(panel => panel.ID === event.tagGroup[0].ID).text}
+                                  id={`hed-endorsement-comment-${eventEntry.tagGroup[0].ID}`}
+                                  value={openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID).text}
                                   onChange={(e) => {
                                     setOpenCommentPanels([
-                                      ...openCommentPanels.filter(panel => panel.ID !== event.tagGroup[0].ID),
+                                      ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
                                       {
-                                        ...openCommentPanels.find(panel => panel.ID === event.tagGroup[0].ID),
+                                        ...openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID),
                                         text: e.target.value
                                       }
                                     ]);
@@ -1862,20 +1861,20 @@ const HEDEndorsement = ({
                               <button
                                 disabled={
                                   openCommentPanels
-                                    .find(panel => panel.ID === event.tagGroup[0].ID)
+                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
                                     .text.length === 0 &&
                                   openCommentPanels
-                                    .find(panel => panel.ID === event.tagGroup[0].ID)
+                                    .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
                                     .activePanel === 'Comment'
                                 }
                                 onClick={() => {
                                   const panel = openCommentPanels.find(
-                                    panel => panel.ID === event.tagGroup[0].ID
+                                    panel => panel.ID === eventEntry.tagGroup[0].ID
                                   );
                                   setSendingRequest(true);
                                   handleEndorseSubmit(panel);
                                   setOpenCommentPanels(
-                                    openCommentPanels.filter(panel => panel.ID !== event.tagGroup[0].ID)
+                                    openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID)
                                   );
                                 }}
                                 className="btn btn-xs btn-primary"
@@ -1889,15 +1888,15 @@ const HEDEndorsement = ({
                               </button>
                               {
                                 openCommentPanels
-                                  .find(panel => panel.ID === event.tagGroup[0].ID)
+                                  .find(panel => panel.ID === eventEntry.tagGroup[0].ID)
                                   .activePanel === 'Comment' && (
                                   <button
                                     onClick={(e) => {
                                       e.preventDefault();
                                       setOpenCommentPanels([
-                                        ...openCommentPanels.filter(panel => panel.ID !== event.tagGroup[0].ID),
+                                        ...openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID),
                                         {
-                                          ...openCommentPanels.find(panel => panel.ID === event.tagGroup[0].ID),
+                                          ...openCommentPanels.find(panel => panel.ID === eventEntry.tagGroup[0].ID),
                                           text: '',
                                         },
                                       ]);
@@ -1911,7 +1910,7 @@ const HEDEndorsement = ({
                               <button
                                 onClick={() => {
                                   setOpenCommentPanels(
-                                    openCommentPanels.filter(panel => panel.ID !== event.tagGroup[0].ID)
+                                    openCommentPanels.filter(panel => panel.ID !== eventEntry.tagGroup[0].ID)
                                   );
                                 }}
                                 className="btn btn-xs btn-primary"
@@ -1935,9 +1934,4 @@ const HEDEndorsement = ({
 
 HEDEndorsement.defaultProps = {};
 
-export default connect(
-  (state: RootState)=> ({
-    hedSchema: state.dataset.hedSchema,
-    datasetTags: state.dataset.datasetTags,
-  })
-)(HEDEndorsement);
+export default HEDEndorsement;

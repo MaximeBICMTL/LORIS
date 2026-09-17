@@ -1,11 +1,9 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {ChannelMetadata, SeriesEvent, HEDSchemaElement, HEDTag,} from '../store/types';
-import {connect} from 'react-redux';
 import {
   getNthMemberTrailingBadgeIndex,
   getTagsForEvent,
 } from '../store/logic/events';
-import {RootState} from '../store';
 import {NumericElement, SelectElement, TextboxElement} from './Form';
 import Panel from './Panel';
 import Modal from 'jsx/Modal';
@@ -21,11 +19,10 @@ import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
 import {useRecording} from '../contexts/RecordingContext';
+import {useHED} from '../contexts/HEDContext';
 
 
 type CProps = {
-  hedSchema: HEDSchemaElement[],
-  datasetTags: any,
   panelIsDirty: boolean,
   setPanelIsDirty: (_: boolean) => void,
   eventChannels: string[],
@@ -47,14 +44,13 @@ type CProps = {
  * @param root0.setEventChannels
  */
 const AnnotationForm = ({
-  hedSchema,
-  datasetTags,
   panelIsDirty,
   setPanelIsDirty,
   eventChannels,
   setEventChannels,
 }: CProps) => {
   const {physioFileID, channelDelimiter} = useRecording();
+  const {hedSchema, datasetTags} = useHED();
   const {currentAnnotation, setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -1265,7 +1261,6 @@ const AnnotationForm = ({
                     </span>
                     }
                     initCollapsed={true}
-                    collapsed={true}
                     style={{
                       padding: '0 15px',
                       margin: '5px 15px 0 15px',
@@ -1583,13 +1578,4 @@ const AnnotationForm = ({
   );
 };
 
-AnnotationForm.defaultProps = {
-  hedSchema: [],
-};
-
-export default connect(
-  (state: RootState)=> ({
-    hedSchema: state.dataset.hedSchema,
-    datasetTags: state.dataset.datasetTags,
-  })
-)(AnnotationForm);
+export default AnnotationForm;

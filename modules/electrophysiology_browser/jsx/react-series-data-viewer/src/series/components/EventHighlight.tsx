@@ -6,7 +6,6 @@ import {Channel} from "../store/types";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 
 type CProps = {
-  key: string,
   parentHeight: number,
   onset: number,
   duration: number,
@@ -36,7 +35,6 @@ type CProps = {
  */
 const EventHighlight = (
   {
-    key,
     parentHeight,
     onset,
     duration,
@@ -78,12 +76,12 @@ const EventHighlight = (
     const rectHeight = height / displayedChannels.length;
 
     return (
-      <React.Fragment key={key}>
+      <>
         {
           indicesToDraw.map((channelIndex) => {
             return (
               <rect
-                key={`rect-${key}-${channelIndex}`}
+                key={`channel-${channelIndex}`}
                 fill={color}
                 fillOpacity={opacity}
                 width={width}
@@ -94,7 +92,7 @@ const EventHighlight = (
             );
           })
         }
-      </React.Fragment>
+      </>
     );
   }
 

@@ -950,7 +950,6 @@ const SeriesRenderer: FunctionComponent = () => {
    *
    */
   const onChannelHover = (channelIndex : number) => {
-    console.log("SET HOVERED CHANNELS A");
     setHoveredChannels(channelIndex === -1 ? [] : [channelIndex]);
   };
 

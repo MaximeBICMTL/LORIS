@@ -6,18 +6,10 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import {applyMiddleware, createStore, Store} from 'redux';
-import {Provider} from 'react-redux';
-import thunk from 'redux-thunk';
 import {fetchJSON, fetchText} from '../ajax';
-import {rootReducer} from '../series/store';
 import {
   DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS,
 } from '../vector';
-import {
-  setDatasetTags,
-  setHedSchemaDocument,
-} from '../series/store/state/dataset';
 import {
   ChannelInfo, ChannelInfos, ChannelMetadata, CoordinateSystem, EventMetadata,
   HEDSchemaElement, Sensor,
@@ -31,12 +23,7 @@ import {
 import {ViewerStateProviders}
   from '../series/contexts/ViewerStateProviders';
 import {RecordingMetadata} from '../series/contexts/RecordingContext';
-
-declare global {
-  interface Window {
-    EEGLabSeriesProviderStore: Store[]; // Store reference per recording
-  }
-}
+import {HEDState} from '../series/contexts/HEDContext';
 
 
 type CProps = {
@@ -249,19 +236,12 @@ type CClassProps = CProps & {
  * EEGLabSeriesProviderClass component
  */
 class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
-  private store: Store;
-
   /**
    * @class
    * @param {object} props - React Component properties
    */
   constructor(props: CClassProps) {
     super(props);
-    this.store = createStore(
-      rootReducer,
-      applyMiddleware(thunk)
-    );
-
     this.state = {
       activeMenuOption: 'TAG_MODE',
       datasetTaggerTabsRef: createRef(),
@@ -289,25 +269,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       t,
       setChannelMetas,
     } = props;
-
-    if (!window.EEGLabSeriesProviderStore) {
-      window.EEGLabSeriesProviderStore = [];
-    }
-    window.EEGLabSeriesProviderStore[chunksURL] = this.store;
-
-    /**
-     *
-     */
-    window.onbeforeunload = function() {
-      const dataset = window.EEGLabSeriesProviderStore[chunksURL]
-        .getState().dataset;
-      if ([...dataset.addedTags, ...dataset.deletedTags].length > 0) {
-        return t(
-          'Are you sure you want to leave unsaved changes behind?',
-          {ns: 'electrophysiology_browser'}
-        );
-      }
-    };
 
     const formattedDatasetTags = {};
     Object.keys(datasetTags).forEach((column) => {
@@ -342,8 +303,14 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
           });
       });
     });
-    this.store.dispatch(setHedSchemaDocument(hedSchema));
-    this.store.dispatch(setDatasetTags(formattedDatasetTags));
+    this.state.initialHEDState = {
+      hedSchema,
+      datasetTags: formattedDatasetTags,
+      relOverrides: [],
+      addedTags: [],
+      deletedTags: [],
+      tagsHaveChanges: false,
+    } as HEDState;
 
     /**
      *
@@ -507,11 +474,15 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
     );
 
     return (
-      <Provider store={this.store}>
-        <ViewerStateProviders
+      <ViewerStateProviders
           events={this.state.events}
           recordingMetadata={this.state.recordingMetadata}
           initialLimit={this.props.limit}
+          initialHEDState={this.state.initialHEDState}
+          unsavedChangesMessage={t(
+            'Are you sure you want to leave unsaved changes behind?',
+            {ns: 'electrophysiology_browser'}
+          )}
         >
             <div id='tag-modal-container'>
             <TriggerableModal
@@ -619,8 +590,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             </div>
             {signalViewer}
             {rest}
-        </ViewerStateProviders>
-      </Provider>
+      </ViewerStateProviders>
     );
   }
 

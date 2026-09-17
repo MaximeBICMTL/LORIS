@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -10,22 +10,15 @@ import PropTypes from 'prop-types';
  * @return {JSX.Element}
  */
 const Panel = (props) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(props.initCollapsed);
   const [activeView, setActiveView] = useState(0);
-
-  /**
-   * Similar to componentDidMount and componentDidUpdate.
-   */
-  useEffect(() => {
-    setCollapsed(props.initCollapsed);
-  }, []);
 
   /**
    * Toggle whether panel is displayed as collapsed
    */
   const toggleCollapsed = () => {
     if (props.collapsing) {
-      setCollapsed(!collapsed);
+      setCollapsed((isCollapsed) => !isCollapsed);
     }
   };
 
@@ -95,8 +88,6 @@ const Panel = (props) => {
           'glyphicon glyphicon-chevron-down' :
           'glyphicon glyphicon-chevron-up'}
                 onClick={toggleCollapsed}
-                data-toggle='collapse'
-                data-target={`#${props.id}`}
                 style={{cursor: 'pointer'}}/>
         : null}
     </div>
@@ -127,7 +118,6 @@ const Panel = (props) => {
 };
 Panel.propTypes = {
   initCollapsed: PropTypes.bool,
-  collapsed: PropTypes.bool,
   parentId: PropTypes.string,
   id: PropTypes.string,
   height: PropTypes.string,
