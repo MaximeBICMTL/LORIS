@@ -6,9 +6,7 @@ import {datasetReducer} from './state/dataset';
 import {currentAnnotationReducer} from './state/currentAnnotation';
 import {cursorReducer} from './state/cursor';
 import {panelReducer} from './state/rightPanel';
-import {timeSelectionReducer} from './state/timeSelection';
 import {channelsReducer} from './state/channels';
-import {createTimeSelectionEpic} from './logic/timeSelection';
 import {createFetchChunksEpic} from './logic/fetchChunks';
 import {
   createActiveEpochEpic,
@@ -32,12 +30,10 @@ export const rootReducer = combineReducers({
   currentAnnotation: currentAnnotationReducer,
   cursor: cursorReducer,
   rightPanel: panelReducer,
-  timeSelection: timeSelectionReducer,
   channels: channelsReducer,
 });
 
 export const rootEpic = combineEpics(
-  createTimeSelectionEpic(),
   createFetchChunksEpic(({dataset, channels}) => ({
     dataset,
     channels,

@@ -35,6 +35,7 @@ import {
   parseElectrodes, parseMegSensors, parseHeadShapePoints,
 } from '../series/store/logic/montage';
 import {IntervalProvider} from '../series/IntervalContext';
+import {TimeSelectionProvider} from '../series/TimeSelectionContext';
 
 declare global {
   interface Window {
@@ -261,7 +262,8 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
    */
   constructor(props: CClassProps) {
     super(props);
-    const epicMiddleware = createEpicMiddleware();
+    // Legacy epics emit both Redux actions and thunk functions.
+    const epicMiddleware = createEpicMiddleware<any, any, any>();
 
     this.store = createStore(
       rootReducer,
@@ -529,7 +531,8 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
     return (
       <Provider store={this.store}>
         <IntervalProvider>
-          <div id='tag-modal-container'>
+          <TimeSelectionProvider>
+            <div id='tag-modal-container'>
             <TriggerableModal
               title={
                 <>
@@ -632,9 +635,10 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
                 }
               />
             </TriggerableModal>
-          </div>
-          {signalViewer}
-          {rest}
+            </div>
+            {signalViewer}
+            {rest}
+          </TimeSelectionProvider>
         </IntervalProvider>
       </Provider>
     );

@@ -3,7 +3,6 @@ import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {buildHEDString, getRootTags, updateActiveEpoch,} from '../store/logic/filterEpochs';
 import {Epoch as EpochType, HEDTag, RightPanel} from '../store/types';
 import {connect} from 'react-redux';
-import {setTimeSelection} from '../store/state/timeSelection';
 import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {RootState} from '../store';
@@ -11,13 +10,12 @@ import Panel from './Panel';
 import {setEpochs} from "../store/state/dataset";
 import {useTranslation} from "react-i18next";
 import {useInterval} from '../IntervalContext';
+import {useTimeSelection} from '../TimeSelectionContext';
 
 type CProps = {
-  timeSelection?: [number, number],
   epochs: EpochType[],
   setCurrentAnnotation: (_: EpochType) => void,
   updateActiveEpoch: (_: number) => void,
-  setTimeSelection: (_: [number, number]) => void,
   setRightPanel: (_: RightPanel) => void,
   setEpochs: (_: EpochType[]) => void,
   activeEpoch: number,
@@ -33,7 +31,6 @@ type CProps = {
  * @param root0.epochs
  * @param root0.updateActiveEpoch
  * @param root0.setCurrentAnnotation
- * @param root0.setTimeSelection
  * @param root0.setRightPanel
  * @param root0.setEpochs
  * @param root0.activeEpoch
@@ -45,7 +42,6 @@ type CProps = {
 const HEDEndorsement = ({
   epochs,
   setCurrentAnnotation,
-  setTimeSelection,
   updateActiveEpoch,
   setRightPanel,
   setEpochs,
@@ -56,6 +52,7 @@ const HEDEndorsement = ({
   pressedKey,
 }: CProps) => {
   const {domain, setInterval} = useInterval();
+  const {setTimeSelection} = useTimeSelection();
 
   const HEDFilter = {
     NO_FILTER: 'No Filter',
@@ -1964,10 +1961,6 @@ export default connect(
     updateActiveEpoch: R.compose(
       dispatch,
       updateActiveEpoch
-    ),
-    setTimeSelection: R.compose(
-      dispatch,
-      setTimeSelection
     ),
     setRightPanel: R.compose(
       dispatch,

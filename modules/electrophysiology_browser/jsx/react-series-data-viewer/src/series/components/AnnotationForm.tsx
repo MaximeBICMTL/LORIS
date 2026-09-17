@@ -1,7 +1,6 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {ChannelMetadata, Epoch as EpochType, HEDSchemaElement, HEDTag, RightPanel,} from '../store/types';
 import {connect} from 'react-redux';
-import {setTimeSelection} from '../store/state/timeSelection';
 import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {
@@ -23,13 +22,12 @@ import {colorOrder} from "../../color";
 import {useTranslation} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useInterval} from '../IntervalContext';
+import {useTimeSelection} from '../TimeSelectionContext';
 
 
 type CProps = {
-  timeSelection?: [number, number],
   epochs: EpochType[],
   filteredEpochs: number[],
-  setTimeSelection: (_: [number, number]) => void,
   setRightPanel: (_: RightPanel) => void,
   setEpochs: (_: EpochType[]) => void,
   currentAnnotation: EpochType,
@@ -49,9 +47,7 @@ type CProps = {
 /**
  *
  * @param root0
- * @param root0.timeSelection
  * @param root0.epochs
- * @param root0.setTimeSelection
  * @param root0.setRightPanel
  * @param root0.setEpochs
  * @param root0.currentAnnotation
@@ -68,9 +64,7 @@ type CProps = {
  * @param root0.setEventChannels
  */
 const AnnotationForm = ({
-  timeSelection,
   epochs,
-  setTimeSelection,
   setRightPanel,
   setEpochs,
   currentAnnotation,
@@ -87,6 +81,7 @@ const AnnotationForm = ({
   setEventChannels,
 }: CProps) => {
   const {domain, interval} = useInterval();
+  const {timeSelection, setTimeSelection} = useTimeSelection();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);
   const [eventInterval, setEventInterval] = useState<(number | string)[]>(
@@ -1611,7 +1606,6 @@ const AnnotationForm = ({
 };
 
 AnnotationForm.defaultProps = {
-  timeSelection: null,
   epochs: [],
   filteredEpochs: [],
   currentAnnotation: null,
@@ -1621,7 +1615,6 @@ AnnotationForm.defaultProps = {
 export default connect(
   (state: RootState)=> ({
     physioFileID: state.dataset.physioFileID,
-    timeSelection: state.timeSelection,
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs.plotVisibility,
     currentAnnotation: state.currentAnnotation,
@@ -1631,10 +1624,6 @@ export default connect(
     channels: state.channels,
   }),
   (dispatch: (any) => void) => ({
-    setTimeSelection: R.compose(
-      dispatch,
-      setTimeSelection
-    ),
     setRightPanel: R.compose(
       dispatch,
       setRightPanel

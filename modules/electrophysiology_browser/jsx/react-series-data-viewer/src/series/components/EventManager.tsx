@@ -17,7 +17,6 @@ import {
   Channel
 } from '../store/types';
 import {connect} from 'react-redux';
-import {setTimeSelection} from '../store/state/timeSelection';
 import {setRightPanel} from '../store/state/rightPanel';
 import * as R from 'ramda';
 import {RootState} from '../store';
@@ -26,14 +25,13 @@ import {CheckboxElement} from './Form';
 import {useTranslation, Trans} from "react-i18next";
 import {ChannelMetasContext} from '../../eeglab/EEGLabSeriesProvider';
 import {useInterval} from '../IntervalContext';
+import {useTimeSelection} from '../TimeSelectionContext';
 
 type CProps = {
-  timeSelection?: [number, number],
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   rightPanel: RightPanel,
   setCurrentAnnotation: (_: EpochType) => void,
-  setTimeSelection: (_: [number, number]) => void,
   setRightPanel: (_: RightPanel) => void,
   toggleEpoch: (_: number) => void,
   updateActiveEpoch: (_: number) => void,
@@ -54,7 +52,6 @@ type CProps = {
  * @param root0.filteredEpochs
  * @param root0.rightPanel
  * @param root0.setCurrentAnnotation
- * @param root0.setTimeSelection
  * @param root0.setRightPanel
  * @param root0.toggleEpoch
  * @param root0.updateActiveEpoch
@@ -71,7 +68,6 @@ const EventManager = ({
   filteredEpochs,
   rightPanel,
   setCurrentAnnotation,
-  setTimeSelection,
   setRightPanel,
   toggleEpoch,
   updateActiveEpoch,
@@ -85,6 +81,7 @@ const EventManager = ({
   tagsHaveChanges,
 }: CProps) => {
   const {domain, interval, setInterval} = useInterval();
+  const {setTimeSelection} = useTimeSelection();
   const {t} = useTranslation();
   const channelMetadata = useContext(ChannelMetasContext);
   const [epochsInRange, setEpochsInRange] = useState(getEpochsInRange(epochs, interval));
@@ -748,7 +745,6 @@ EventManager.defaultProps = {};
 
 export default connect(
   (state: RootState)=> ({
-    timeSelection: state.timeSelection,
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
     rightPanel: state.rightPanel,
@@ -763,10 +759,6 @@ export default connect(
     setCurrentAnnotation: R.compose(
       dispatch,
       setCurrentAnnotation
-    ),
-    setTimeSelection: R.compose(
-      dispatch,
-      setTimeSelection
     ),
     setRightPanel: R.compose(
       dispatch,

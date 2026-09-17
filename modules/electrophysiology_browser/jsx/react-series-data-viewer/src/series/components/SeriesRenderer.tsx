@@ -61,11 +61,6 @@ import {
   setViewerHeight,
 } from '../store/state/bounds';
 import {
-  continueDragSelection,
-  endDragSelection,
-  startDragSelection,
-} from '../store/logic/timeSelection';
-import {
   Channel,
   Cursor,
   Epoch as EpochType,
@@ -76,7 +71,6 @@ import {setCurrentAnnotation} from '../store/state/currentAnnotation';
 import {setCursorInteraction} from '../store/logic/cursorInteraction';
 import {getEpochsInRange, updateActiveEpoch} from '../store/logic/filterEpochs';
 import HEDEndorsement from "./HEDEndorsement";
-import {setTimeSelection} from "../store/state/timeSelection";
 import {useTranslation} from "react-i18next";
 import ChannelTypesSelector from './ChannelTypesSelector';
 import Pagination from './Pagination';
@@ -88,6 +82,7 @@ import MutableKeyDepCache from '../../MutableDepCache';
 import {ImagingGatewayCapabilitiesContext}
   from '../../../../ImagingGatewayCapabilities';
 import {useInterval} from '../IntervalContext';
+import {useTimeSelection} from '../TimeSelectionContext';
 
 /**
  * The state of a channel type.
@@ -144,7 +139,6 @@ type CProps = {
   viewerHeight: number,
   amplitudeScale: number,
   rightPanel: RightPanel,
-  timeSelection?: [number, number],
   setRightPanel: (_: RightPanel | void) => void,
   chunksURL: string,
   channels: Channel[],
@@ -158,15 +152,11 @@ type CProps = {
   setViewerWidth: (_: number) => void,
   setViewerHeight: (_: number) => void,
   setDatasetMetadata: (_: { limit: number }) => void,
-  dragStart: (_: {position: number, interval: [number, number]}) => void,
-  dragContinue: (_: {position: number, interval: [number, number]}) => void,
-  dragEnd: (_: number) => void,
   limit: number,
   loadedChannels: number,
   setCurrentAnnotation: (_: EpochType) => void,
   physioFileID: number,
   updateActiveEpoch: (_: number) => void,
-  setTimeSelection: (_: [number, number]) => void,
   setCursor: (_: Cursor) => void,
 };
 
@@ -178,7 +168,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   viewerWidth,
   amplitudeScale,
   rightPanel,
-  timeSelection,
   setCursor,
   setRightPanel,
   chunksURL,
@@ -193,17 +182,20 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   setViewerWidth,
   setViewerHeight,
   setDatasetMetadata,
-  dragStart,
-  dragContinue,
-  dragEnd,
   limit,
   loadedChannels,
   setCurrentAnnotation,
   physioFileID,
   updateActiveEpoch,
-  setTimeSelection,
 }) => {
     const {domain, interval, setInterval} = useInterval();
+    const {
+      timeSelection,
+      setTimeSelection,
+      startTimeSelection,
+      continueTimeSelection,
+      endTimeSelection,
+    } = useTimeSelection();
     const [
         numDisplayedChannels,
         setNumDisplayedChannels,
@@ -952,18 +944,17 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       1,
       Math.max(0, (v.pageX - bounds.left)/bounds.width)
     );
-    return dragContinue({position: x, interval});
+    continueTimeSelection(x);
   };
 
   /**
    *
    */
-  const onMouseUp = (v : MouseEvent) => {
+  const onMouseUp = () => {
     if (bounds === null || bounds === undefined) return;
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
-    const x = Math.min(100, Math.max(0, (v.pageX - bounds.left)/bounds.width));
-    return (dragEnd)(x);
+    endTimeSelection();
   };
 
   /**
@@ -1393,8 +1384,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                       mouseDown={useCallback((v: Vector2) => {
                         document.addEventListener('mousemove', onMouseMove);
                         document.addEventListener('mouseup', onMouseUp);
-                        dragStart({position: v[0], interval});
-                      }, [bounds, interval])}
+                        startTimeSelection(v[0]);
+                      }, [bounds, startTimeSelection])}
                       showOverflow={showOverflow}
                       cssClass={''}
                       domain={domain}
@@ -1722,7 +1713,6 @@ export default connect(
     viewerHeight: state.bounds.viewerHeight,
     amplitudeScale: state.bounds.amplitudeScale,
     rightPanel: state.rightPanel,
-    timeSelection: state.timeSelection,
     chunksURL: state.dataset.chunksURL,
     channels: state.channels,
     epochs: state.dataset.epochs,
@@ -1773,25 +1763,9 @@ export default connect(
       dispatch,
       setCurrentAnnotation
     ),
-    dragStart: R.compose(
-      dispatch,
-      startDragSelection
-    ),
-    dragContinue: R.compose(
-      dispatch,
-      continueDragSelection
-    ),
-    dragEnd: R.compose(
-      dispatch,
-      endDragSelection
-    ),
     updateActiveEpoch: R.compose(
       dispatch,
       updateActiveEpoch
-    ),
-    setTimeSelection: R.compose(
-      dispatch,
-      setTimeSelection
     ),
   })
 )(SeriesRenderer);
