@@ -8,11 +8,9 @@ import React, {
   useMemo,
   useContext,
 } from 'react';
-import * as R from 'ramda';
 import {vec2} from 'gl-matrix';
 import swal from 'sweetalert2';
 import {Group} from '@visx/group';
-import {connect} from 'react-redux';
 import {scaleLinear, ScaleLinear} from 'd3-scale';
 import {colorOrder} from '../../color';
 import {
@@ -30,13 +28,11 @@ import LineChunk from './LineChunk';
 import EventHighlight from './EventHighlight';
 import SeriesCursor from './SeriesCursor';
 import LoadingBar from './LoadingBar';
-import {setDatasetMetadata} from '../store/state/dataset';
 import {createChannelTypesDict, filterSelectedChannels, findBidsChannel} from '../store/logic/channels';
 import TimeWindowControls from './TimeWindowControls';
 import EventManager from './EventManager';
 import AnnotationForm from './AnnotationForm';
 import {TopographicMapButton} from './TopographicMap';
-import {RootState} from '../store';
 
 import {
   HighPassFilterSelect,
@@ -65,6 +61,7 @@ import {useViewedChannels} from '../hooks/useViewedChannels';
 import {useSetCursor} from '../contexts/CursorContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
+import {useRecording} from '../contexts/RecordingContext';
 
 /**
  * The state of a channel type.
@@ -115,23 +112,11 @@ function compareChannelRangeDeps(a: ChannelRangeCacheDeps, b: ChannelRangeCacheD
   return true;
 }
 
-type CProps = {
-  ref: MutableRefObject<any>,
-  chunksURL: string,
-  setDatasetMetadata: (_: { limit: number }) => void,
-  limit: number,
-  physioFileID: number,
-};
-
 /**
  *
  */
-const SeriesRenderer: FunctionComponent<CProps> = ({
-  chunksURL,
-  setDatasetMetadata,
-  limit,
-  physioFileID,
-}) => {
+const SeriesRenderer: FunctionComponent = () => {
+    const {chunksURL, limit, physioFileID, setLimit} = useRecording();
     const {setCurrentAnnotation} = useCurrentAnnotation();
     const {
       events,
@@ -927,7 +912,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
    */
   const handleChannelChange = (numChannels: number) => {
     setNumDisplayedChannels(numChannels); // This one is the frontend controller
-    setDatasetMetadata({limit: numChannels}); // Will trigger re-render to the store
+    setLimit(numChannels);
     updateOffsetIndex(offsetIndex); // Will include new channels on limit increase
     setViewerHeight(
       numChannels > 4
@@ -1570,10 +1555,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   );
 };
 
-SeriesRenderer.defaultProps = {
-  limit: DEFAULT_MAX_CHANNELS,
-};
-
 /**
  * Get the range of the visible values of a channel across all its traces.
  */
@@ -1665,16 +1646,4 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): Float3
   return values;
 }
 
-export default connect(
-  (state: RootState)=> ({
-    chunksURL: state.dataset.chunksURL,
-    limit: state.dataset.limit,
-    physioFileID: state.dataset.physioFileID,
-  }),
-  (dispatch: (_: any) => void) => ({
-    setDatasetMetadata: R.compose(
-      dispatch,
-      setDatasetMetadata
-    ),
-  })
-)(SeriesRenderer);
+export default SeriesRenderer;

@@ -8,6 +8,7 @@ import {CursorProvider} from './CursorContext';
 import {CurrentAnnotationProvider} from './CurrentAnnotationContext';
 import {EventProvider} from './EventContext';
 import {SeriesEvent} from '../store/types';
+import {RecordingMetadata, RecordingProvider} from './RecordingContext';
 
 /**
  * Compose the React state providers used by the signal viewer.
@@ -15,12 +16,17 @@ import {SeriesEvent} from '../store/types';
 export function ViewerStateProviders({
   children,
   events,
+  recordingMetadata,
+  initialLimit,
 }: {
   children: React.ReactNode,
   events: SeriesEvent[],
+  recordingMetadata: RecordingMetadata,
+  initialLimit: number,
 }) {
   return (
-    <RightPanelProvider>
+    <RecordingProvider metadata={recordingMetadata} initialLimit={initialLimit}>
+      <RightPanelProvider>
       <CursorProvider>
         <CurrentAnnotationProvider>
           <PassFilterProvider>
@@ -36,6 +42,7 @@ export function ViewerStateProviders({
           </PassFilterProvider>
         </CurrentAnnotationProvider>
       </CursorProvider>
-    </RightPanelProvider>
+      </RightPanelProvider>
+    </RecordingProvider>
   );
 }

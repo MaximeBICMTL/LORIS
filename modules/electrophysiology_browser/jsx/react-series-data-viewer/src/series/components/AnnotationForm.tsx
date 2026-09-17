@@ -20,13 +20,12 @@ import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
+import {useRecording} from '../contexts/RecordingContext';
 
 
 type CProps = {
-  physioFileID: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
-  channelDelimiter: string,
   panelIsDirty: boolean,
   setPanelIsDirty: (_: boolean) => void,
   eventChannels: string[],
@@ -48,15 +47,14 @@ type CProps = {
  * @param root0.setEventChannels
  */
 const AnnotationForm = ({
-  physioFileID,
   hedSchema,
   datasetTags,
-  channelDelimiter,
   panelIsDirty,
   setPanelIsDirty,
   eventChannels,
   setEventChannels,
 }: CProps) => {
+  const {physioFileID, channelDelimiter} = useRecording();
   const {currentAnnotation, setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -1591,9 +1589,7 @@ AnnotationForm.defaultProps = {
 
 export default connect(
   (state: RootState)=> ({
-    physioFileID: state.dataset.physioFileID,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
-    channelDelimiter: state.dataset.channelDelimiter,
   })
 )(AnnotationForm);

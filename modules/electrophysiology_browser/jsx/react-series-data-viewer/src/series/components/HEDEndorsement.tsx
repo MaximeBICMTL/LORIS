@@ -10,10 +10,10 @@ import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
+import {useRecording} from '../contexts/RecordingContext';
 
 type CProps = {
   viewerHeight: number,
-  physioFileID: number,
   canEndorse: boolean,
   pressedKey: string,
 };
@@ -33,10 +33,10 @@ type CProps = {
  */
 const HEDEndorsement = ({
   viewerHeight,
-  physioFileID,
   canEndorse,
   pressedKey,
 }: CProps) => {
+  const {physioFileID} = useRecording();
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -1939,6 +1939,5 @@ export default connect(
   (state: RootState)=> ({
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
-    physioFileID: state.dataset.physioFileID,
   })
 )(HEDEndorsement);

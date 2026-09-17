@@ -1,10 +1,9 @@
 import {useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
 import {usePassFilters} from '../contexts/PassFilterContext';
 import {useTimeWindow} from '../contexts/TimeWindowContext';
-import {RootState} from '../store';
 import {Channel} from '../store/types';
 import {loadViewedChannels} from '../viewedChannels';
+import {useRecording} from '../contexts/RecordingContext';
 
 type ViewedChannels = {
   channels: Channel[],
@@ -15,9 +14,7 @@ const UPDATE_DEBOUNCE_TIME = 100;
 
 /** Load the signal data needed by the current viewport and channel page. */
 export function useViewedChannels(channelIndexes: number[]): ViewedChannels {
-  const {chunksURL, shapes, validSamples} = useSelector(
-    (state: RootState) => state.dataset
-  );
+  const {chunksURL, shapes, validSamples} = useRecording();
   const {recordingTimeRange, timeWindow} = useTimeWindow();
   const {filters} = usePassFilters();
   const [channels, setChannels] = useState<Channel[]>([]);

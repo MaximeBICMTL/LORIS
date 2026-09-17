@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {useSelector} from 'react-redux';
-import {RootState} from '../store';
 import {
   applyFilter,
   getHighPassFilterKey,
@@ -17,6 +15,7 @@ import {
   FilterCoefficients,
   SignalFilter,
 } from '../store/logic/highLowPass';
+import {useRecording} from './RecordingContext';
 
 type PassFilterContextValue = {
   highPass?: number,
@@ -36,9 +35,7 @@ const PassFilterContext = createContext<PassFilterContextValue | undefined>(
 export const PassFilterProvider: FunctionComponent<{
   children: React.ReactNode,
 }> = ({children}) => {
-  const samplingFrequency = useSelector(
-    (state: RootState) => state.dataset.samplingFrequency
-  );
+  const {samplingFrequency} = useRecording();
   const [highPass, setHighPass] = useState<number | undefined>();
   const [lowPass, setLowPass] = useState<number | undefined>();
 

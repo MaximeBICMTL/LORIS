@@ -21,12 +21,12 @@ import {useTimeSelection} from '../contexts/TimeSelectionContext';
 import {useRightPanel} from '../contexts/RightPanelContext';
 import {useCurrentAnnotation} from '../contexts/CurrentAnnotationContext';
 import {useEvents} from '../contexts/EventContext';
+import {useRecording} from '../contexts/RecordingContext';
 
 type CProps = {
   viewerHeight: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: any,
-  channelDelimiter: string,
   channels: Channel[],
   canEdit: boolean,
   tagsHaveChanges: boolean,
@@ -52,11 +52,11 @@ const EventManager = ({
   viewerHeight,
   hedSchema,
   datasetTags,
-  channelDelimiter,
   channels,
   canEdit,
   tagsHaveChanges,
 }: CProps) => {
+  const {channelDelimiter} = useRecording();
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -737,7 +737,6 @@ export default connect(
   (state: RootState)=> ({
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
-    channelDelimiter: state.dataset.channelDelimiter,
     tagsHaveChanges: state.dataset.tagsHaveChanges,
   })
 )(EventManager);

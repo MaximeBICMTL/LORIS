@@ -5,11 +5,12 @@ import {RootState} from "../store";
 import {CheckboxElement, SelectDropdown} from './Form';
 import Panel from './Panel'; // Different from jsx/Panel
 import {HEDSchemaElement, HEDTag} from "../store/types";
-import {setAddedTags, setDatasetTags, setDeletedTags, setRelOverrides, setDatasetMetadata} from "../store/state/dataset";
+import {setAddedTags, setDatasetTags, setDeletedTags, setRelOverrides, setTagsHaveChanges} from "../store/state/dataset";
 import swal from "sweetalert2";
 import {buildHEDString, getNthMemberTrailingBadgeIndex, getRootTags} from "../store/logic/events";
 import {colorOrder} from "../../color";
 import {Trans, useTranslation} from "react-i18next";
+import {useRecording} from '../contexts/RecordingContext';
 
 const TagAction = {
   'Select': {
@@ -35,7 +36,6 @@ const TagAction = {
 }
 
 type CProps = {
-  physioFileID: number,
   hedSchema: HEDSchemaElement[],
   datasetTags: HEDTag,
   relOverrides: HEDTag[],
@@ -43,14 +43,13 @@ type CProps = {
   deletedTags: HEDTag[],
   setAddedTags: (_: HEDTag[]) => void,
   setDeletedTags: (_: HEDTag[]) => void,
-  channelDelimiter: string,
   setRelOverrides: (_: HEDTag[]) => void,
   setDatasetTags: (_: any) => void,
   activeMenuTab: string,
   setActiveMenuTab:  (_: string) => void,
   tabsRef: MutableRefObject<any>,
   tagsHaveChanges: boolean,
-  setDatasetMetadata: (_: any) => void,
+  setTagsHaveChanges: (_: boolean) => void,
   filenamePrefix: string,
 };
 
@@ -72,17 +71,15 @@ type CProps = {
  * @param root0.setActiveMenuTab
  * @param root0.tabsRef
  * @param root0.tagsHaveChanges
- * @param root0.setDatasetMetadata
+ * @param root0.setTagsHaveChanges
  * @param root0.filenamePrefix
  */
 const DatasetTagger = ({
-  physioFileID,
   datasetTags,
   relOverrides,
   hedSchema,
   addedTags,
   deletedTags,
-  channelDelimiter,
   setAddedTags,
   setDeletedTags,
   setDatasetTags,
@@ -91,9 +88,10 @@ const DatasetTagger = ({
   setActiveMenuTab,
   tabsRef,
   tagsHaveChanges,
-  setDatasetMetadata,
+  setTagsHaveChanges,
   filenamePrefix,
 }: CProps) => {
+  const {physioFileID, channelDelimiter} = useRecording();
   const tagListID = 'searchable-hed-tags';
   const {t} = useTranslation();
   const [searchText, setSearchText] = useState('');
@@ -197,7 +195,7 @@ const DatasetTagger = ({
   }, []);
 
   useEffect(() => {
-    setDatasetMetadata({ tagsHaveChanges: false, });
+    setTagsHaveChanges(false);
   }, [tagsHaveChanges]);
 
   const generateTagID = (index: number) => {
@@ -430,7 +428,7 @@ const DatasetTagger = ({
       });
 
       setDatasetTags(updatedDatasetTags);
-      setDatasetMetadata({ tagsHaveChanges: true });
+      setTagsHaveChanges(true);
       setAddedTags([]);
       setDeletedTags([]);
       setRelOverrides([]);
@@ -2317,13 +2315,11 @@ DatasetTagger.defaultProps = {};
 
 export default connect(
   (state: RootState) => ({
-    physioFileID: state.dataset.physioFileID,
     datasetTags: state.dataset.datasetTags,
     relOverrides: state.dataset.hedRelOverrides,
     hedSchema: state.dataset.hedSchema,
     addedTags: state.dataset.addedTags,
     deletedTags: state.dataset.deletedTags,
-    channelDelimiter: state.dataset.channelDelimiter,
     tagsHaveChanges: state.dataset.tagsHaveChanges,
   }),
   (dispatch: (_: any) => void) => ({
@@ -2343,9 +2339,9 @@ export default connect(
       dispatch,
       setRelOverrides
     ),
-    setDatasetMetadata: R.compose(
+    setTagsHaveChanges: R.compose(
       dispatch,
-      setDatasetMetadata
+      setTagsHaveChanges
     ),
   })
 )(DatasetTagger);

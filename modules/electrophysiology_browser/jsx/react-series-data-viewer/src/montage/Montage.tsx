@@ -2,7 +2,6 @@ import React, {
   useState, useEffect, SetStateAction, Dispatch, useContext, useCallback,
   useMemo,
 } from 'react';
-import {connect} from 'react-redux';
 import {Group} from '@visx/group';
 import ResponsiveViewer from '../series/components/ResponsiveViewer';
 import Panel from '../series/components/Panel';
@@ -10,7 +9,6 @@ import SensorCategoriesSelector, {
   createSensorCategoryMap,
   SensorCategoryMap,
 } from './SensorCategoriesSelector';
-import {RootState} from '../series/store';
 import {useTranslation} from 'react-i18next';
 import {
   ChannelInfosContext,
@@ -18,6 +16,7 @@ import {
   CoordSystemContext, SensorsContext,
 } from '../eeglab/EEGLabSeriesProvider';
 import {Sensor} from '../series/store/types';
+import {useRecording} from '../series/contexts/RecordingContext';
 import Montage3D from './Montage3D';
 import ChannelsEditor from './ChannelsEditor';
 import {
@@ -38,12 +37,9 @@ type CProps = {
   contentHeight: string,
   cssClass: string,
   editChannels: boolean,
-  channelDelimiter: string,
   setCancelWarning?: Dispatch<SetStateAction<boolean>>,
   setEventChannels?: Dispatch<SetStateAction<string[]>>,
   eventChannels?: string[],
-  montageName: string,
-  timeInterval: [number, number],
 };
 
 /**
@@ -55,13 +51,12 @@ function Montage({
   contentHeight = '300px',
   cssClass = '',
   editChannels,
-  channelDelimiter,
   setCancelWarning,
   setEventChannels,
   eventChannels,
-  montageName,
-  timeInterval,
 }: CProps) {
+  const {channelDelimiter, eegMontageName: montageName, timeInterval} =
+    useRecording();
   const coordinateSystem = useContext(CoordSystemContext);
   let sensors = useContext(SensorsContext);
 
@@ -465,10 +460,4 @@ function Montage({
   );
 }
 
-export default connect(
-  (state: RootState) => ({
-    channelDelimiter: state.dataset.channelDelimiter,
-    montageName: state.dataset.eegMontageName,
-    timeInterval: state.dataset.timeInterval,
-  }),
-)(Montage);
+export default Montage;

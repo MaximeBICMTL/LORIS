@@ -15,10 +15,8 @@ import {
   DEFAULT_CHANNEL_DELIMITER, DEFAULT_MAX_CHANNELS,
 } from '../vector';
 import {
-  setDatasetMetadata,
   setDatasetTags,
   setHedSchemaDocument,
-  setPhysioFileID,
 } from '../series/store/state/dataset';
 import {
   ChannelInfo, ChannelInfos, ChannelMetadata, CoordinateSystem, EventMetadata,
@@ -32,6 +30,7 @@ import {
 } from '../series/store/logic/montage';
 import {ViewerStateProviders}
   from '../series/contexts/ViewerStateProviders';
+import {RecordingMetadata} from '../series/contexts/RecordingContext';
 
 declare global {
   interface Window {
@@ -267,6 +266,18 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       activeMenuOption: 'TAG_MODE',
       datasetTaggerTabsRef: createRef(),
       events: [],
+      recordingMetadata: {
+        chunksURL: '',
+        channelDelimiter: '',
+        samplingFrequency: props.samplingFrequency,
+        eegMontageName: props.eegMontageName,
+        physioFileID: props.physioFileID,
+        shapes: [],
+        validSamples: [],
+        timeInterval: [0, 1],
+        seriesRange: [-1, 2],
+        recordingHasHED: props.recordingHasHED,
+      } as RecordingMetadata,
     };
 
     const {
@@ -275,11 +286,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       datasetTags,
       datasetTagEndorsements,
       events,
-      physioFileID,
-      limit,
-      samplingFrequency,
-      eegMontageName,
-      recordingHasHED,
       t,
       setChannelMetas,
     } = props;
@@ -336,7 +342,6 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
           });
       });
     });
-    this.store.dispatch(setPhysioFileID(physioFileID));
     this.store.dispatch(setHedSchemaDocument(hedSchema));
     this.store.dispatch(setDatasetTags(formattedDatasetTags));
 
@@ -368,20 +373,16 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             channelMetadata, shapes, timeInterval, seriesRange, validSamples,
           } = json;
           setChannelMetas(channelMetadata);
-          this.store.dispatch(
-            setDatasetMetadata({
+          this.setState(({recordingMetadata}) => ({
+            recordingMetadata: {
+              ...recordingMetadata,
               chunksURL: url,
-              channelMetadata,
               shapes,
               validSamples,
               timeInterval,
               seriesRange,
-              limit,
-              samplingFrequency,
-              eegMontageName,
-              recordingHasHED,
-            })
-          );
+            },
+          }));
         }
       }
     ).then(() => {
@@ -389,9 +390,9 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
       const channelDelimiter = events['channel_delimiter'].length > 0
         ? events['channel_delimiter']
         : DEFAULT_CHANNEL_DELIMITER;
-      this.store.dispatch(
-        setDatasetMetadata({channelDelimiter: channelDelimiter})
-      );
+      this.setState(({recordingMetadata}) => ({
+        recordingMetadata: {...recordingMetadata, channelDelimiter},
+      }));
 
       events.instances.map((instance) => {
         const eventIndex = parsedEvents.findIndex(
@@ -507,7 +508,11 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
 
     return (
       <Provider store={this.store}>
-        <ViewerStateProviders events={this.state.events}>
+        <ViewerStateProviders
+          events={this.state.events}
+          recordingMetadata={this.state.recordingMetadata}
+          initialLimit={this.props.limit}
+        >
             <div id='tag-modal-container'>
             <TriggerableModal
               title={

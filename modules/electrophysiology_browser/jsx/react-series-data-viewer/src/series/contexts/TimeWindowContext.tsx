@@ -7,11 +7,10 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {useSelector} from 'react-redux';
-import {RootState} from '../store';
 import {DEFAULT_TIME_WINDOW} from '../../vector';
 import {TimeRange} from './types';
 import {normalizeTimeWindow} from '../timeWindow';
+import {useRecording} from './RecordingContext';
 
 type TimeWindowContextValue = {
   recordingTimeRange: TimeRange,
@@ -29,9 +28,7 @@ const TimeWindowContext = createContext<TimeWindowContextValue | undefined>(
 export const TimeWindowProvider: FunctionComponent<{
   children: React.ReactNode,
 }> = ({children}) => {
-  const recordingTimeRange = useSelector(
-    (state: RootState) => state.dataset.timeInterval
-  );
+  const {timeInterval: recordingTimeRange} = useRecording();
   const [timeWindow, updateTimeWindow] = useState<TimeRange>(() =>
     normalizeTimeWindow(DEFAULT_TIME_WINDOW, recordingTimeRange)
   );
