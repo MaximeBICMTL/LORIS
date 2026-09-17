@@ -37,6 +37,7 @@ import {
 import {IntervalProvider} from '../series/IntervalContext';
 import {TimeSelectionProvider} from '../series/TimeSelectionContext';
 import {AmplitudeProvider} from '../series/AmplitudeContext';
+import {PassFilterProvider} from '../series/PassFilterContext';
 
 declare global {
   interface Window {
@@ -119,6 +120,23 @@ export const HoveredChannelsContext = createContext<HoveredChannelsType>({
   hoveredChannels: [],
   setHoveredChannels: ignoreSetHoveredChannels,
 });
+
+/**
+ * Compose the React state providers used by the signal viewer.
+ */
+function ViewerStateProviders({children}: {children: React.ReactNode}) {
+  return (
+    <PassFilterProvider>
+      <AmplitudeProvider>
+        <IntervalProvider>
+          <TimeSelectionProvider>
+            {children}
+          </TimeSelectionProvider>
+        </IntervalProvider>
+      </AmplitudeProvider>
+    </PassFilterProvider>
+  );
+}
 
 /**
  * Function wrapper around the older `EEGLabSeriesProviderClass` class
@@ -531,9 +549,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
 
     return (
       <Provider store={this.store}>
-        <AmplitudeProvider>
-          <IntervalProvider>
-            <TimeSelectionProvider>
+        <ViewerStateProviders>
             <div id='tag-modal-container'>
             <TriggerableModal
               title={
@@ -640,9 +656,7 @@ class EEGLabSeriesProviderClass extends Component<CClassProps, any> {
             </div>
             {signalViewer}
             {rest}
-            </TimeSelectionProvider>
-          </IntervalProvider>
-        </AmplitudeProvider>
+        </ViewerStateProviders>
       </Provider>
     );
   }

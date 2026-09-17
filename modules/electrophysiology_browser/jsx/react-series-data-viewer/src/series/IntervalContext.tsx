@@ -12,6 +12,7 @@ import {RootState} from './store';
 import {updateViewedChunks} from './store/logic/fetchChunks';
 import {DEFAULT_TIME_INTERVAL} from '../vector';
 import {useAmplitude} from './AmplitudeContext';
+import {usePassFilters} from './PassFilterContext';
 
 export type Interval = [number, number];
 
@@ -32,7 +33,7 @@ export const IntervalProvider: FunctionComponent<{
   children: React.ReactNode,
 }> = ({children}) => {
   const domain = useSelector((state: RootState) => state.dataset.timeInterval);
-  const filters = useSelector((state: RootState) => state.filters);
+  const {filters} = usePassFilters();
   const {amplitudeScale} = useAmplitude();
   const [interval, updateInterval] = useState<Interval>(DEFAULT_TIME_INTERVAL);
   const dispatch = useDispatch();
@@ -45,7 +46,7 @@ export const IntervalProvider: FunctionComponent<{
   }, []);
 
   useEffect(() => {
-    dispatch(updateViewedChunks({domain, interval}));
+    dispatch(updateViewedChunks({domain, filters, interval}));
   }, [amplitudeScale, dispatch, domain, filters, interval]);
 
   const value = useMemo(() => ({

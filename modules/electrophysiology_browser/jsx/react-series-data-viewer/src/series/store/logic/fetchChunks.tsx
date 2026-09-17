@@ -4,11 +4,11 @@ import {Observable, from, of} from 'rxjs';
 import * as Rx from 'rxjs/operators';
 import {createAction} from 'redux-actions';
 import {setDatasetMetadata, State as DatasetState} from '../state/dataset';
-import {Filter} from '../state/filters';
 import {Channel, Chunk} from '../types';
 import {fetchChunk} from '../../../chunks';
 import {MAX_VIEWED_CHUNKS} from '../../../vector';
 import {setChannels} from '../state/channels';
+import {SignalFilter} from './highLowPass';
 
 export const UPDATE_VIEWED_CHUNKS = 'UPDATE_VIEWED_CHUNKS';
 export const updateViewedChunks = createAction(UPDATE_VIEWED_CHUNKS);
@@ -26,14 +26,12 @@ type FetchedChunks = {
  * @param {FetchedChunks[]} chunksData - The fetched chunks
  * @returns {Function} - Dispatch actions to the store
  */
-export const loadChunks = (chunksData: FetchedChunks[]) => {
+export const loadChunks = (
+  chunksData: FetchedChunks[],
+  filters: Record<string, SignalFilter>
+) => {
   return (dispatch: (_: any) => void) => {
     const channels : Channel[] = [];
-
-    const filters: Filter[] = chunksData[0] !== undefined
-      ? window.EEGLabSeriesProviderStore[chunksData[0].chunksURL]
-        .getState().filters
-      : [];
 
     for (let index = 0; index < chunksData.length; index++) {
       const {channelIndex, chunks} : {
@@ -58,7 +56,7 @@ export const loadChunks = (chunksData: FetchedChunks[]) => {
 
       // Filter entire visible signal
       const filteredChunkValues = Object.values(filters).reduce(
-        (signal: Float32Array, filter: Filter) => {
+        (signal: Float32Array, filter: SignalFilter) => {
           return filter.fn(signal);
         },
         originalChunkValues
@@ -129,6 +127,7 @@ type Interval = [number, number];
 
 type Viewport = {
   domain: Interval,
+  filters: Record<string, SignalFilter>,
   interval: Interval,
 };
 
@@ -266,9 +265,10 @@ export const createFetchChunksEpic = (fromState: (any) => State) => (
       return from(fetches).pipe(
         Rx.mergeMap(R.identity),
         Rx.toArray(),
+        Rx.map((chunksData) => ({chunksData, filters: viewport.filters})),
       );
     }),
     // @ts-ignore
-    Rx.map((payload) => loadChunks(payload))
+    Rx.map(({chunksData, filters}) => loadChunks(chunksData, filters))
   );
 };

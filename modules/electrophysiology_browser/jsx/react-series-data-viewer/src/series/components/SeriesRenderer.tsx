@@ -41,14 +41,6 @@ import {RootState} from '../store';
 import {createAction} from 'redux-actions';
 
 import {
-  getHighPassFilterFrequency,
-  getHighPassFilterKey,
-  getLowPassFilterFrequency,
-  getLowPassFilterKey,
-  setLowPassFilter,
-  setHighPassFilter,
-} from '../store/logic/highLowPass';
-import {
   HighPassFilterSelect,
   LowPassFilterSelect,
 } from './PassFilterSelect';
@@ -80,6 +72,7 @@ import {ImagingGatewayCapabilitiesContext}
 import {useInterval} from '../IntervalContext';
 import {useTimeSelection} from '../TimeSelectionContext';
 import {useAmplitude} from '../AmplitudeContext';
+import {usePassFilters} from '../PassFilterContext';
 
 /**
  * The state of a channel type.
@@ -141,8 +134,6 @@ type CProps = {
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   activeEpoch: number,
-  setLowPassFilter: (_: string) => void,
-  setHighPassFilter: (_: string) => void,
   setViewerWidth: (_: number) => void,
   setViewerHeight: (_: number) => void,
   setDatasetMetadata: (_: { limit: number }) => void,
@@ -168,8 +159,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   epochs,
   filteredEpochs,
   activeEpoch,
-  setLowPassFilter,
-  setHighPassFilter,
   setViewerWidth,
   setViewerHeight,
   setDatasetMetadata,
@@ -185,6 +174,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       scaleAmplitude,
       resetAmplitude,
     } = useAmplitude();
+    const {filters, highPass, lowPass, setHighPass, setLowPass} =
+      usePassFilters();
     const {
       timeSelection,
       setTimeSelection,
@@ -211,8 +202,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     const toggleSingleMode = () => setSingleMode((value) => !value);
     const [showOverflow, setShowOverflow] = useState(false);
     const toggleShowOverflow = () => setShowOverflow((value) => !value);
-    const [highPass, setHighPass] = useState('none');
-    const [lowPass, setLowPass] = useState('none');
     const [refNode, setRefNode] = useState<HTMLDivElement>(null);
     const [bounds, setBounds] = useState<ClientRect>(null);
     const [offsetIndex, setOffsetIndex] = useState(1);
@@ -374,7 +363,7 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
     }
 
     store.dispatch(createAction(SET_CHANNELS)(channels));
-    store.dispatch(updateViewedChunks({domain, interval}));
+    store.dispatch(updateViewedChunks({domain, filters, interval}));
   }, [displayedChannelIndexes]);
 
   // Function used to update the pagination offset index, with checks to prevent invalid indexes.
@@ -1129,8 +1118,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                     <TopographicMapButton
                       physioFileID={physioFileID}
                       timeSelection={timeSelection}
-                      lowPass={getLowPassFilterFrequency(lowPass)}
-                      highPass={getHighPassFilterFrequency(highPass)}
+                      lowPass={lowPass}
+                      highPass={highPass}
                     />
                   )}
                   <div id="right-panel-controls">
@@ -1212,21 +1201,13 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
                       />
                     </div>
                     <HighPassFilterSelect
-                      value={getHighPassFilterFrequency(highPass)}
-                      onChange={(frequency) => {
-                        const key = getHighPassFilterKey(frequency);
-                        setHighPassFilter(key);
-                        setHighPass(key);
-                      }}
+                      value={highPass}
+                      onChange={setHighPass}
                     />
 
                     <LowPassFilterSelect
-                      value={getLowPassFilterFrequency(lowPass)}
-                      onChange={(frequency) => {
-                        const key = getLowPassFilterKey(frequency);
-                        setLowPassFilter(key);
-                        setLowPass(key);
-                      }}
+                      value={lowPass}
+                      onChange={setLowPass}
                     />
                     <input
                       type='button'
@@ -1724,14 +1705,6 @@ export default connect(
     setRightPanel: R.compose(
       dispatch,
       setRightPanel
-    ),
-    setLowPassFilter: R.compose(
-      dispatch,
-      setLowPassFilter
-    ),
-    setHighPassFilter: R.compose(
-      dispatch,
-      setHighPassFilter
     ),
     setViewerWidth: R.compose(
       dispatch,

@@ -1,21 +1,20 @@
-import * as R from 'ramda';
-import {Observable} from 'rxjs';
-import * as Rx from 'rxjs/operators';
-import {ofType} from 'redux-observable';
-import {createAction} from 'redux-actions';
-import {setFilter} from '../state/filters';
 import {DifferenceEquationSignal1D}
   from '../../../libs/DifferenceEquationSignal1D';
 
-export const SET_LOW_PASS_FILTER = 'SET_LOW_PASS_FILTER';
-export const setLowPassFilter = createAction(SET_LOW_PASS_FILTER);
+export type SignalFilter = {
+  name: string,
+  fn: (_: Float32Array) => Float32Array,
+};
 
-export const SET_HIGH_PASS_FILTER = 'SET_HIGH_PASS_FILTER';
-export const setHighPassFilter = createAction(SET_HIGH_PASS_FILTER);
+export type FilterCoefficients = {
+  a: number[],
+  b: number[],
+};
 
-export type Action = (_: (_: any) => void) => void;
-
-const LOW_PASS_FILTER_KEYS_BY_FREQUENCY: Record<number, string> = {
+const LOW_PASS_FILTER_KEYS_BY_FREQUENCY: Record<
+  number,
+  keyof typeof LOW_PASS_FILTERS
+> = {
   15: 'lopass15',
   20: 'lopass20',
   30: 'lopass30',
@@ -23,7 +22,10 @@ const LOW_PASS_FILTER_KEYS_BY_FREQUENCY: Record<number, string> = {
   60: 'lopass60',
 };
 
-const HIGH_PASS_FILTER_KEYS_BY_FREQUENCY: Record<number, string> = {
+const HIGH_PASS_FILTER_KEYS_BY_FREQUENCY: Record<
+  number,
+  keyof typeof HIGH_PASS_FILTERS
+> = {
   0.5: 'hipass0_5',
   1: 'hipass1',
   5: 'hipass5',
@@ -33,7 +35,9 @@ const HIGH_PASS_FILTER_KEYS_BY_FREQUENCY: Record<number, string> = {
 /**
  * Return the legacy low pass filter key for a frequency.
  */
-export function getLowPassFilterKey(frequency?: number): string {
+export function getLowPassFilterKey(
+  frequency?: number
+): keyof typeof LOW_PASS_FILTERS {
   return frequency === undefined
     ? 'none'
     : LOW_PASS_FILTER_KEYS_BY_FREQUENCY[frequency] ?? 'none';
@@ -42,7 +46,9 @@ export function getLowPassFilterKey(frequency?: number): string {
 /**
  * Return the legacy high pass filter key for a frequency.
  */
-export function getHighPassFilterKey(frequency?: number): string {
+export function getHighPassFilterKey(
+  frequency?: number
+): keyof typeof HIGH_PASS_FILTERS {
   return frequency === undefined
     ? 'none'
     : HIGH_PASS_FILTER_KEYS_BY_FREQUENCY[frequency] ?? 'none';
@@ -51,7 +57,9 @@ export function getHighPassFilterKey(frequency?: number): string {
 /**
  * Return the optional low pass frequency for a legacy filter key.
  */
-export function getLowPassFilterFrequency(key: string): number | undefined {
+export function getLowPassFilterFrequency(
+  key: keyof typeof LOW_PASS_FILTERS
+): number | undefined {
   const frequency = LOW_PASS_FILTERS[key]?.frequency ?? 0;
   return frequency === 0 ? undefined : frequency;
 }
@@ -59,7 +67,9 @@ export function getLowPassFilterFrequency(key: string): number | undefined {
 /**
  * Return the optional high pass frequency for a legacy filter key.
  */
-export function getHighPassFilterFrequency(key: string): number | undefined {
+export function getHighPassFilterFrequency(
+  key: keyof typeof HIGH_PASS_FILTERS
+): number | undefined {
   const frequency = HIGH_PASS_FILTERS[key]?.frequency ?? 0;
   return frequency === 0 ? undefined : frequency;
 }
@@ -71,7 +81,10 @@ export function getHighPassFilterFrequency(key: string): number | undefined {
  * @param {Float32Array} input - The input signal
  * @returns {Float32Array} - The output signal
  */
-const applyFilter = (coefficients, input) => {
+export const applyFilter = (
+  coefficients: FilterCoefficients | null,
+  input: Float32Array
+): Float32Array => {
   const diffFilter = new DifferenceEquationSignal1D();
   diffFilter.enableBackwardSecondPass();
 
@@ -80,7 +93,7 @@ const applyFilter = (coefficients, input) => {
     diffFilter.setACoefficients(coefficients.a);
     diffFilter.setBCoefficients(coefficients.b);
     diffFilter.run(); // eventually should be pixpipe's update()
-    return Array.from(diffFilter.getOutput());
+    return Array.from(diffFilter.getOutput()) as unknown as Float32Array;
   }
   return input;
 };
@@ -250,30 +263,6 @@ export const LOW_PASS_FILTERS = {
   },
 };
 
-/**
- * createLowPassFilterEpic
- *
- * @returns {Observable<Action>} - A stream of actions
- */
-export const createLowPassFilterEpic = () => (
-  action$: Observable<any>,
-  state$: Observable<any>,
-): Observable<Action> => action$.pipe(
-  ofType(SET_LOW_PASS_FILTER),
-  Rx.map(R.prop('payload')),
-  Rx.withLatestFrom(state$),
-  Rx.map<[string, any], any>(([payload, state]) => (dispatch) => {
-    const samplingFrequency = state.dataset.samplingFrequency;
-    dispatch(setFilter({
-      key: 'lowPass',
-      name: payload,
-      fn: R.curry(applyFilter)(
-        LOW_PASS_FILTERS[payload].coefficients[samplingFrequency]
-      ),
-    }));
-  })
-);
-
 export const HIGH_PASS_FILTERS = {
   'none': {
     label: 'No High Pass Filter',
@@ -408,27 +397,3 @@ export const HIGH_PASS_FILTERS = {
     },
   },
 };
-
-/**
- * createHighPassFilterEpic
- *
- * @returns {Observable<Action>} - A stream of actions
- */
-export const createHighPassFilterEpic = () => (
-  action$: Observable<any>,
-  state$: Observable<any>
-): Observable<Action> => action$.pipe(
-  ofType(SET_HIGH_PASS_FILTER),
-  Rx.map(R.prop('payload')),
-  Rx.withLatestFrom(state$),
-  Rx.map<[string, any], any>(([payload, state]) => (dispatch) => {
-    const samplingFrequency = state.dataset.samplingFrequency;
-    dispatch(setFilter({
-      key: 'highPass',
-      name: payload,
-      fn: R.curry(applyFilter)(
-        HIGH_PASS_FILTERS[payload].coefficients[samplingFrequency]
-      ),
-    }));
-  })
-);

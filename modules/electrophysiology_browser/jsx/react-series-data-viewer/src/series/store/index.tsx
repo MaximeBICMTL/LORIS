@@ -1,7 +1,6 @@
 import {combineReducers} from 'redux';
 import {combineEpics} from 'redux-observable';
 import {boundsReducer} from './state/bounds';
-import {filtersReducer} from './state/filters';
 import {datasetReducer} from './state/dataset';
 import {currentAnnotationReducer} from './state/currentAnnotation';
 import {cursorReducer} from './state/cursor';
@@ -13,15 +12,10 @@ import {
   createFilterEpochsEpic,
   createToggleEpochEpic,
 } from './logic/filterEpochs';
-import {
-  createLowPassFilterEpic,
-  createHighPassFilterEpic,
-} from './logic/highLowPass';
 import {createCursorInteractionEpic} from './logic/cursorInteraction';
 
 export const rootReducer = combineReducers({
   bounds: boundsReducer,
-  filters: filtersReducer,
   dataset: datasetReducer,
   currentAnnotation: currentAnnotationReducer,
   cursor: cursorReducer,
@@ -34,8 +28,6 @@ export const rootEpic = combineEpics(
     dataset,
     channels,
   })),
-  createLowPassFilterEpic(),
-  createHighPassFilterEpic(),
   createFilterEpochsEpic(({dataset}) => {
     const {epochs} = dataset;
     const {filteredEpochs} = dataset;
