@@ -44,10 +44,6 @@ import {
   LowPassFilterSelect,
 } from './PassFilterSelect';
 import {
-  setViewerWidth,
-  setViewerHeight,
-} from '../store/state/bounds';
-import {
   Channel,
   Cursor,
   Epoch as EpochType,
@@ -125,15 +121,11 @@ function compareChannelRangeDeps(a: ChannelRangeCacheDeps, b: ChannelRangeCacheD
 
 type CProps = {
   ref: MutableRefObject<any>,
-  viewerWidth: number,
-  viewerHeight: number,
   chunksURL: string,
   channels: Channel[],
   epochs: EpochType[],
   filteredEpochs: EpochFilter,
   activeEpoch: number,
-  setViewerWidth: (_: number) => void,
-  setViewerHeight: (_: number) => void,
   setDatasetMetadata: (_: { limit: number }) => void,
   limit: number,
   loadedChannels: number,
@@ -147,16 +139,12 @@ type CProps = {
  *
  */
 const SeriesRenderer: FunctionComponent<CProps> = ({
-  viewerHeight,
-  viewerWidth,
   setCursor,
   chunksURL,
   channels,
   epochs,
   filteredEpochs,
   activeEpoch,
-  setViewerWidth,
-  setViewerHeight,
   setDatasetMetadata,
   limit,
   loadedChannels,
@@ -164,6 +152,8 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
   physioFileID,
   updateActiveEpoch,
 }) => {
+    const [viewerWidth, setViewerWidth] = useState(400);
+    const [viewerHeight, setViewerHeight] = useState(DEFAULT_VIEWER_HEIGHT);
     const {rightPanel, setRightPanel} = useRightPanel();
     const {
       recordingTimeRange: domain,
@@ -532,10 +522,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
       setTimeSelection(null);
     }
   }, [rightPanel]);
-
-  useEffect(() => {
-    setViewerHeight(viewerHeight);
-  }, [viewerHeight]);
 
   useEffect(() => {
     if (refNode) {
@@ -1573,13 +1559,17 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
               }
               {
                 rightPanel === 'eventList' &&
-                <EventManager canEdit={canEditEvents} />
+                <EventManager
+                  canEdit={canEditEvents}
+                  viewerHeight={viewerHeight}
+                />
               }
               {
                 rightPanel === 'hedEndorsement' &&
                 <HEDEndorsement
                   canEndorse={canEditEvents}
                   pressedKey={pressedKey}
+                  viewerHeight={viewerHeight}
                 />
               }
             </div>
@@ -1596,7 +1586,6 @@ const SeriesRenderer: FunctionComponent<CProps> = ({
 };
 
 SeriesRenderer.defaultProps = {
-  viewerHeight: 400,
   channels: [],
   epochs: [],
   limit: DEFAULT_MAX_CHANNELS,
@@ -1695,8 +1684,6 @@ function getTraceVisibleValues(trace: Trace, interval: [number, number]): Float3
 
 export default connect(
   (state: RootState)=> ({
-    viewerWidth: state.bounds.viewerWidth,
-    viewerHeight: state.bounds.viewerHeight,
     chunksURL: state.dataset.chunksURL,
     channels: state.channels,
     epochs: state.dataset.epochs,
@@ -1710,14 +1697,6 @@ export default connect(
     setCursor: R.compose(
       dispatch,
       setCursorInteraction
-    ),
-    setViewerWidth: R.compose(
-      dispatch,
-      setViewerWidth
-    ),
-    setViewerHeight: R.compose(
-      dispatch,
-      setViewerHeight
     ),
     setDatasetMetadata: R.compose(
       dispatch,

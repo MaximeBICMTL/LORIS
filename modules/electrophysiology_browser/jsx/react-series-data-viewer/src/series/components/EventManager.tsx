@@ -745,7 +745,6 @@ export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
     filteredEpochs: state.dataset.filteredEpochs,
-    viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     channelDelimiter: state.dataset.channelDelimiter,

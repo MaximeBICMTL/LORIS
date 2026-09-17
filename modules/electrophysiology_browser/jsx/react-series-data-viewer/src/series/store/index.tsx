@@ -1,6 +1,5 @@
 import {combineReducers} from 'redux';
 import {combineEpics} from 'redux-observable';
-import {boundsReducer} from './state/bounds';
 import {datasetReducer} from './state/dataset';
 import {currentAnnotationReducer} from './state/currentAnnotation';
 import {cursorReducer} from './state/cursor';
@@ -14,7 +13,6 @@ import {
 import {createCursorInteractionEpic} from './logic/cursorInteraction';
 
 export const rootReducer = combineReducers({
-  bounds: boundsReducer,
   dataset: datasetReducer,
   currentAnnotation: currentAnnotationReducer,
   cursor: cursorReducer,

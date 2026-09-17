@@ -1947,7 +1947,6 @@ HEDEndorsement.defaultProps = {};
 export default connect(
   (state: RootState)=> ({
     epochs: state.dataset.epochs,
-    viewerHeight: state.bounds.viewerHeight,
     hedSchema: state.dataset.hedSchema,
     datasetTags: state.dataset.datasetTags,
     physioFileID: state.dataset.physioFileID,
