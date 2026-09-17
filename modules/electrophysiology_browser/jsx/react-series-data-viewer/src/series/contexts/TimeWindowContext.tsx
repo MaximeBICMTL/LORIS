@@ -14,6 +14,7 @@ import {DEFAULT_TIME_WINDOW} from '../../vector';
 import {useAmplitude} from './AmplitudeContext';
 import {usePassFilters} from './PassFilterContext';
 import {TimeRange} from './types';
+import {normalizeTimeWindow} from '../timeWindow';
 
 type TimeWindowContextValue = {
   recordingTimeRange: TimeRange,
@@ -36,17 +37,24 @@ export const TimeWindowProvider: FunctionComponent<{
   );
   const {filters} = usePassFilters();
   const {amplitudeScale} = useAmplitude();
-  const [timeWindow, updateTimeWindow] = useState<TimeRange>(
-    DEFAULT_TIME_WINDOW
+  const [timeWindow, updateTimeWindow] = useState<TimeRange>(() =>
+    normalizeTimeWindow(DEFAULT_TIME_WINDOW, recordingTimeRange)
   );
   const dispatch = useDispatch();
 
   const setTimeWindow = useCallback((nextTimeWindow: TimeRange) => {
-    updateTimeWindow([
-      Math.min(nextTimeWindow[0], nextTimeWindow[1]),
-      Math.max(nextTimeWindow[0], nextTimeWindow[1]),
-    ]);
-  }, []);
+    updateTimeWindow(normalizeTimeWindow(
+      nextTimeWindow,
+      recordingTimeRange
+    ));
+  }, [recordingTimeRange]);
+
+  useEffect(() => {
+    updateTimeWindow((currentTimeWindow) => normalizeTimeWindow(
+      currentTimeWindow,
+      recordingTimeRange
+    ));
+  }, [recordingTimeRange]);
 
   useEffect(() => {
     dispatch(updateViewedChunks({
