@@ -21,6 +21,7 @@ import LoadingBar from '../../ui/LoadingBar';
 import TimeWindowControls from '../../timeline/components/TimeWindowControls';
 import EventManager from '../../events/components/EventManager';
 import AnnotationForm from '../../annotations/components/AnnotationForm';
+import {TopographicMapButton} from './TopographicMap';
 
 import {
   HighPassFilterSelect,
@@ -31,6 +32,7 @@ import {useTranslation} from 'react-i18next';
 import ChannelTypesSelector from '../../channels/components/ChannelTypesSelector';
 import Pagination from '../../channels/components/Pagination';
 import {HoveredChannelsContext} from '../../recording/RecordingDataProvider';
+import {ImagingGatewayContext} from '../../../../ImagingGateway';
 import {useTimeWindow} from '../../timeline/TimeWindowContext';
 import {useTimeSelection} from '../../timeline/TimeSelectionContext';
 import {useAmplitude} from '../state/AmplitudeContext';
@@ -61,7 +63,7 @@ type SignalViewerProps = {
 function SignalViewer({navigationRequest, viewerID}: SignalViewerProps) {
   const signalPlotRef = useRef<HTMLDivElement | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const {chunksURL} = useRecording();
+  const {chunksURL, physioFileID} = useRecording();
   const {setCurrentAnnotation} = useCurrentAnnotation();
   const {
     events,
@@ -91,6 +93,7 @@ function SignalViewer({navigationRequest, viewerID}: SignalViewerProps) {
     zoomToSelection,
   } = useTimeSelection();
   const {t} = useTranslation();
+  const imagingGateway = useContext(ImagingGatewayContext);
 
   const cursorRef = useRef(null);
   const {
@@ -199,6 +202,14 @@ function SignalViewer({navigationRequest, viewerID}: SignalViewerProps) {
       <div className='signal-viewer-main'>
         <div className='recording-viewer-toolbar'>
           <div className='recording-viewer-toolbar-actions'>
+            {imagingGateway.status === 'available' && (
+              <TopographicMapButton
+                physioFileID={physioFileID}
+                timeSelection={timeSelection ?? undefined}
+                lowPass={lowPass}
+                highPass={highPass}
+              />
+            )}
             <div id='right-panel-controls'>
               <ChannelTypesSelector
                 channelTypes={channelTypes}

@@ -1,10 +1,11 @@
 /**
  * Session contents navigation for the electrophysiology viewer.
  */
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import type {TFunction} from 'i18next';
 import type {RecordingDatabaseEntry} from './RecordingSection';
 import {RECORDING_VIEWER_ENABLED} from './RecordingSection';
+import {ImagingGatewayContext} from '../ImagingGateway';
 import {hasRecordingHED} from '../utils';
 
 type Navigation = {
@@ -61,6 +62,7 @@ export default function Sidebar({
   t,
 }: SidebarProps): React.ReactElement {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const imagingGateway = useContext(ImagingGatewayContext);
   const [activeTarget, setActiveTarget] = useState<ActiveTarget>({
     targetID: 'session-summary',
   });
@@ -68,13 +70,16 @@ export default function Sidebar({
   useEffect(() => {
     const targetIDs = [
       'session-summary',
-      ...recordings.flatMap((_recording, index) => [
+      ...recordings.flatMap((recording, index) => [
         ...(RECORDING_VIEWER_ENABLED
           ? [
             `signal-viewer-${index}`,
             `recording-montage-${index}`,
             `recording-summary-${index}`,
             `recording-downloads-${index}`,
+            ...(imagingGateway.featureAvailability[recording.file.id]?.meegqc
+              ? [`recording-meegqc-${index}`]
+              : []),
           ]
           : []),
         `recording-details-${index}`,
@@ -158,7 +163,7 @@ export default function Sidebar({
       window.removeEventListener('resize', scheduleUpdate);
       window.cancelAnimationFrame(animationFrame);
     };
-  }, [recordings]);
+  }, [imagingGateway.featureAvailability, recordings]);
 
   /** Navigate to a recording section or viewer panel. */
   function navigateTo(
@@ -275,6 +280,13 @@ export default function Sidebar({
                     label: t('Downloads', ns),
                     targetID: `recording-downloads-${index}`,
                   },
+                  ...(imagingGateway.featureAvailability[recording.file.id]
+                    ?.meegqc
+                    ? [{
+                      label: t('MEEGqc', ns),
+                      targetID: `recording-meegqc-${index}`,
+                    }]
+                    : []),
                 ]
                 : []),
               {

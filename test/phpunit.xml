@@ -33,6 +33,7 @@
       <directory>../modules/genomic_browser/test/</directory>
       <directory>../modules/help_editor/test/</directory>
       <directory>../modules/imaging_browser/test/</directory>
+      <directory>../modules/imaging_gateway/test/</directory>
       <directory>../modules/imaging_qc/test/</directory>
       <directory>../modules/imaging_uploader/test/</directory>
       <directory>../modules/instrument_builder/test/</directory>

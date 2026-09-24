@@ -29,6 +29,7 @@ INSERT INTO modules (Name, Active) VALUES ('examiner', 'N');
 INSERT INTO modules (Name, Active) VALUES ('genomic_browser', 'N');
 INSERT INTO modules (Name, Active) VALUES ('help_editor', 'N');
 INSERT INTO modules (Name, Active) VALUES ('imaging_browser', 'N');
+INSERT INTO modules (Name, Active) VALUES ('imaging_gateway', 'N');
 INSERT INTO modules (Name, Active) VALUES ('imaging_qc', 'N');
 INSERT INTO modules (Name, Active) VALUES ('imaging_uploader', 'N');
 INSERT INTO modules (Name, Active) VALUES ('instrument_builder', 'N');

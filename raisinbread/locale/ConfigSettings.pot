@@ -766,3 +766,22 @@ msgstr ""
 
 msgid "Path to store the EEG chunks for Visualization"
 msgstr ""
+
+# Imaging Gateway
+msgid "Imaging Gateway"
+msgstr ""
+
+msgid "Settings for forwarding authenticated requests to the internal imaging service"
+msgstr ""
+
+msgid "Upstream URL"
+msgstr ""
+
+msgid "Base HTTP(S) URL of the internal imaging service"
+msgstr ""
+
+msgid "Connection timeout (seconds)"
+msgstr ""
+
+msgid "Maximum number of seconds to wait while connecting to the internal imaging service"
+msgstr ""

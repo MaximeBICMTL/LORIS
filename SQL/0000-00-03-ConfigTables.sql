@@ -224,6 +224,11 @@ INSERT INTO ConfigCategories (Name, Description, Visible, Label, OrderNumber) VA
 INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, CategoryID, Label, OrderNumber) SELECT 'redcap_issue_assignee', 'REDCap main issue assignee in issue tracker', 1, 0, 'text', ID, 'Main issue assignee', 1 FROM ConfigCategories WHERE Name = 'redcap';
 INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, CategoryID, Label, OrderNumber) SELECT 'redcap_importable_instrument', 'REDCap instrument names from which data should be imported in LORIS', 1, 1, 'text', ID, 'Importable instrument names', 2 FROM ConfigCategories WHERE Name = 'redcap';
 
+-- Imaging Gateway settings
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('imaging_gateway', 'Settings for forwarding authenticated requests to the internal imaging service', 1, 0, 'Imaging Gateway', 17);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'imaging_gateway_upstream_url', 'Base HTTP(S) URL of the internal imaging service', 1, 0, 'text', ID, 'Upstream URL', 1 FROM ConfigSettings WHERE Name='imaging_gateway';
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'imaging_gateway_connect_timeout_seconds', 'Maximum number of seconds to wait while connecting to the internal imaging service', 1, 0, 'text', ID, 'Connection timeout (seconds)', 2 FROM ConfigSettings WHERE Name='imaging_gateway';
+
 --
 -- Filling Config table with default values
 --
@@ -344,6 +349,8 @@ INSERT INTO Config (ConfigID, Value) SELECT ID, '' FROM ConfigSettings WHERE Nam
 INSERT INTO Config (ConfigID, Value) SELECT ID, '' FROM ConfigSettings WHERE Name='bids_acknowledgments_text';
 INSERT INTO Config (ConfigID, Value) SELECT ID, '' FROM ConfigSettings WHERE Name='bids_readme_text';
 INSERT INTO Config (ConfigID, Value) SELECT ID, '' FROM ConfigSettings WHERE Name='bids_validator_options_to_ignore';
+
+INSERT INTO Config (ConfigID, Value) SELECT ID, '5' FROM ConfigSettings WHERE Name='imaging_gateway_connect_timeout_seconds';
 
 CREATE TABLE menu_categories (
 	name varchar(255) NOT NULL PRIMARY KEY,
