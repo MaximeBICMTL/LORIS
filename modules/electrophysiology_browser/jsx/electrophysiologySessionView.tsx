@@ -19,6 +19,7 @@ import type {
   RecordingFile,
 } from './components/RecordingSection';
 import Sidebar from './components/Sidebar';
+import {ImagingGatewayProvider} from './ImagingGateway';
 import frStrings from '../locale/fr/LC_MESSAGES/electrophysiology_browser.json';
 import jaStrings from '../locale/ja/LC_MESSAGES/electrophysiology_browser.json';
 import zhStrings from '../locale/zh/LC_MESSAGES/electrophysiology_browser.json';
@@ -386,13 +387,15 @@ function ElectrophysiologySessionPage(
   });
 
   return (
-    <ElectrophysiologySessionView
-      navigation={navigation}
-      onSessionNavigationChange={setNavigation}
-      sidebarContainer={sidebarContainer}
-      sessionid={sessionid}
-      t={t}
-    />
+    <ImagingGatewayProvider>
+      <ElectrophysiologySessionView
+        navigation={navigation}
+        onSessionNavigationChange={setNavigation}
+        sidebarContainer={sidebarContainer}
+        sessionid={sessionid}
+        t={t}
+      />
+    </ImagingGatewayProvider>
   );
 }
 

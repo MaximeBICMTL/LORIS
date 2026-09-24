@@ -1,10 +1,11 @@
 /**
  * Session contents navigation for the electrophysiology viewer.
  */
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import type {TFunction} from 'i18next';
 import type {RecordingDatabaseEntry} from './RecordingSection';
 import {RECORDING_VIEWER_ENABLED} from './RecordingSection';
+import {ImagingGatewayContext} from '../ImagingGateway';
 import {hasRecordingHED} from '../utils';
 
 type Navigation = {
@@ -57,6 +58,7 @@ export default function Sidebar({
 }: SidebarProps): React.ReactElement {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTargetID, setActiveTargetID] = useState('session-summary');
+  const imagingGateway = useContext(ImagingGatewayContext);
 
   useEffect(() => {
     const targets = document.querySelectorAll<HTMLElement>(
@@ -77,7 +79,7 @@ export default function Sidebar({
 
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
-  }, [recordings]);
+  }, [imagingGateway.featureAvailability, recordings]);
 
   /** Navigate to a recording section or viewer panel. */
   function navigateTo(
@@ -184,6 +186,13 @@ export default function Sidebar({
                     label: t('Downloads', ns),
                     targetID: `recording-downloads-${index}`,
                   },
+                  ...(imagingGateway.featureAvailability[recording.file.id]
+                    ?.meegqc
+                    ? [{
+                      label: t('MEEGqc', ns),
+                      targetID: `recording-meegqc-${index}`,
+                    }]
+                    : []),
                 ]
                 : []),
               {

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import type {ReactNode} from 'react';
 import type {TFunction} from 'i18next';
 import Panel from '../recording-viewer/src/ui/Panel';
@@ -8,6 +8,8 @@ import SummaryPanel from './SummaryPanel';
 import DownloadPanel from './DownloadPanel';
 import type {DownloadGroup} from './DownloadPanel';
 import PanelGrid from './PanelGrid';
+import MEEGqcFilesPanel from '../meegqc/MEEGqcFilesPanel';
+import {ImagingGatewayContext} from '../ImagingGateway';
 import {
   getRecordingChannelsURL,
   hasRecordingHED,
@@ -109,6 +111,7 @@ function RecordingSection({
   navigationRequest,
   t,
 }: RecordingSectionProps): React.ReactElement {
+  const imagingGateway = useContext(ImagingGatewayContext);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const {
     chunksURLs,
@@ -131,6 +134,16 @@ function RecordingSection({
       setIsCollapsed(false);
     }
   }, [fileIndex, navigationRequest]);
+  const gatewayAvailable = imagingGateway.status === 'available';
+  const meegqcAvailable = imagingGateway.featureAvailability[file.id]
+    ?.meegqc;
+  const showMEEGqc = gatewayAvailable && meegqcAvailable !== false;
+  const megSensorsURL = gatewayAvailable
+    ? `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/sensors`
+    : undefined;
+  const megHeadShapeURL = gatewayAvailable
+    ? `${loris.BaseURL}/imaging_gateway/ephys/${file.id}/meg/headshape`
+    : undefined;
   const channelsURL = getRecordingChannelsURL(
     loris.BaseURL,
     patient,
@@ -211,6 +224,8 @@ function RecordingSection({
               events={events}
               electrodesURL={electrodesURL}
               coordSystemURL={coordSystemURL}
+              megSensorsURL={megSensorsURL}
+              megHeadShapeURL={megHeadShapeURL}
               hedSchema={hedSchema}
               datasetTags={datasetTags}
               datasetTagEndorsements={datasetTagEndorsements}
@@ -308,6 +323,13 @@ function RecordingSection({
                   physioFileName={file.name}
                   t={t}
                 />
+                {showMEEGqc && (
+                  <MEEGqcFilesPanel
+                    id={`recording-meegqc-${fileIndex}`}
+                    physioFileID={file.id}
+                    t={t}
+                  />
+                )}
               </PanelGrid>
             </RecordingDataProvider>
           </div>}
