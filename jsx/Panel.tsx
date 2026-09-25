@@ -2,7 +2,6 @@ import React, {
   CSSProperties,
   ReactElement,
   ReactNode,
-  useEffect,
   useState,
 } from 'react';
 import {useTranslation} from 'react-i18next';
@@ -14,51 +13,57 @@ export type PanelView = {
 };
 
 export type PanelProps = {
-  initCollapsed?: boolean;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
   collapsed?: boolean;
-  parentId?: string | null;
+  onCollapsedChange?: (collapsed: boolean) => void;
   id?: string;
   height?: CSSProperties['height'];
   title?: ReactNode;
-  class?: string;
+  className?: string;
   children?: ReactNode;
   views?: PanelView[];
   onChangeView?: (index: number) => void;
-  collapsing?: boolean;
-  bold?: boolean;
   panelSize?: CSSProperties['height'];
   style?: CSSProperties;
   maxHeight?: CSSProperties['maxHeight'];
 };
 
 /** A collapsible panel component with optional multiple views. */
-function Panel(props: PanelProps): ReactElement {
-  const {
-    initCollapsed = false,
-    parentId = null,
-    id = 'default-panel',
-    height = '100%',
-    class: panelClass = 'panel-primary',
-    collapsing = true,
-  } = props;
-  const [collapsed, setCollapsed] = useState(false);
+function Panel({
+  defaultCollapsed = false,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
+  id = 'default-panel',
+  height = '100%',
+  title,
+  className = 'panel-primary',
+  children,
+  views: viewDefinitions,
+  onChangeView,
+  collapsible = false,
+  panelSize,
+  style,
+  maxHeight,
+}: PanelProps): ReactElement {
+  const [internalCollapsed, setInternalCollapsed] = useState(
+    defaultCollapsed
+  );
   const [activeView, setActiveView] = useState(0);
   const {t} = useTranslation();
-
-  /**
-   * Similar to componentDidMount and componentDidUpdate.
-   */
-  useEffect(() => {
-    setCollapsed(initCollapsed);
-  }, []);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
 
   /**
    * Toggle whether panel is displayed as collapsed
    */
   const toggleCollapsed = () => {
-    if (collapsing) {
-      setCollapsed(!collapsed);
+    if (!collapsible) return;
+
+    const nextCollapsed = !collapsed;
+    if (controlledCollapsed === undefined) {
+      setInternalCollapsed(nextCollapsed);
     }
+    onCollapsedChange?.(nextCollapsed);
   };
 
   /**
@@ -68,18 +73,16 @@ function Panel(props: PanelProps): ReactElement {
    */
   const viewClicked = (index: number) => {
     setActiveView(index);
-    if (props.onChangeView) {
-      props.onChangeView(index);
-    }
+    onChangeView?.(index);
   };
 
   // Panel Views (START)
-  const views: ReactElement[] = [];
+  const viewOptions: ReactElement[] = [];
   const content: ReactElement[] = [];
-  let panelViews: ReactElement | undefined;
-  if (props.views) {
-    for (const [index, view] of props.views.entries()) {
-      views.push(
+  let viewMenu: ReactElement | undefined;
+  if (viewDefinitions) {
+    for (const [index, view] of viewDefinitions.entries()) {
+      viewOptions.push(
         <li key={index}
           onClick={() => viewClicked(index)}
           className={index === activeView ? 'active' : undefined}>
@@ -97,7 +100,7 @@ function Panel(props: PanelProps): ReactElement {
         </div>
       );
     }
-    panelViews = (
+    viewMenu = (
       <div className='btn-group views'>
         <button type='button'
           className='btn btn-default btn-xs dropdown-toggle'
@@ -106,7 +109,7 @@ function Panel(props: PanelProps): ReactElement {
         </button>
         <ul className='dropdown-menu pull-right'
           role='menu'>
-          {views}
+          {viewOptions}
         </ul>
       </div>
     );
@@ -114,33 +117,46 @@ function Panel(props: PanelProps): ReactElement {
   // Panel Views (END)
 
   // Add panel header, if title is set
-  const panelHeading = props.title || props.views ? (
-    <div className='panel-heading'
-      data-parent={parentId
-        ? `#${parentId}`
-        : null}>
+  const panelHeading = title || viewDefinitions ? (
+    <div className='panel-heading'>
       <h3 className='panel-title'>
-        {props.views && props.views[activeView]['title']
-          ? props.views[activeView]['title']
-          : props.title}
-        {props.views && props.views[activeView]['subtitle']
+        {viewDefinitions && viewDefinitions[activeView]['title']
+          ? viewDefinitions[activeView]['title']
+          : title}
+        {viewDefinitions && viewDefinitions[activeView]['subtitle']
           && <span>
-            {!props.views[activeView]['subtitle'].endsWith('-1')
-              ? ' | ' + `${props.views[activeView]['subtitle']}`
+            {!viewDefinitions[activeView]['subtitle'].endsWith('-1')
+              ? ' | ' + `${viewDefinitions[activeView]['subtitle']}`
               : ' | ' + 'Loading...'
             }
           </span>
         }
       </h3>
-      {panelViews}
-      {collapsing
-        ? <span className={collapsed ?
-          'glyphicon glyphicon-chevron-down' :
-          'glyphicon glyphicon-chevron-up'}
-        onClick={toggleCollapsed}
-        data-toggle='collapse'
-        data-target={`#${id}`}
-        style={{cursor: 'pointer'}}/>
+      {viewMenu}
+      {collapsible
+        ? <button
+          type='button'
+          onClick={toggleCollapsed}
+          aria-controls={id}
+          aria-expanded={!collapsed}
+          aria-label={collapsed
+            ? t('Expand', {ns: 'loris'})
+            : t('Collapse', {ns: 'loris'})}
+          style={{
+            background: 'none',
+            border: 0,
+            color: 'inherit',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <span
+            aria-hidden='true'
+            className={collapsed
+              ? 'glyphicon glyphicon-chevron-down'
+              : 'glyphicon glyphicon-chevron-up'}
+          />
+        </button>
         : null}
     </div>
   ) : '';
@@ -151,18 +167,19 @@ function Panel(props: PanelProps): ReactElement {
    * @return {ReactElement} - React markup for component.
    */
   return (
-    <div className={`panel ${panelClass}`}
-      style={{height: props.panelSize, maxHeight: props.maxHeight}}>
+    <div className={`panel ${className}`}
+      style={{height: panelSize, maxHeight}}>
       {panelHeading}
       <div id={id}
-        className={props.collapsed ?
+        className={collapsed ?
           'panel-collapse collapse' :
           'panel-collapse collapse in'}
         role='tabpanel'
+        aria-hidden={collapsed}
         style={{height: 'calc(100% - 3em)'}}>
         <div className='panel-body'
-          style={{...props.style, height}}>
-          {content.length > 0 ? content : props.children}
+          style={{...style, height}}>
+          {content.length > 0 ? content : children}
         </div>
       </div>
     </div>
