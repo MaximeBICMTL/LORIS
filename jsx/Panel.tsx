@@ -1,16 +1,46 @@
-import React, {useEffect, useState} from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+  useEffect,
+  useState,
+} from 'react';
 import {useTranslation} from 'react-i18next';
 
-/**
- * Panel - a collapsible panel component with optional multiple views.
- *
- * @author Alex I.
- * @version 2.0.0
- * @param {object} props
- * @return {JSX.Element}
- */
-const Panel = (props) => {
+export type PanelView = {
+  title?: ReactNode;
+  subtitle?: string;
+  content: ReactNode;
+};
+
+export type PanelProps = {
+  initCollapsed?: boolean;
+  collapsed?: boolean;
+  parentId?: string | null;
+  id?: string;
+  height?: CSSProperties['height'];
+  title?: ReactNode;
+  class?: string;
+  children?: ReactNode;
+  views?: PanelView[];
+  onChangeView?: (index: number) => void;
+  collapsing?: boolean;
+  bold?: boolean;
+  panelSize?: CSSProperties['height'];
+  style?: CSSProperties;
+  maxHeight?: CSSProperties['maxHeight'];
+};
+
+/** A collapsible panel component with optional multiple views. */
+function Panel(props: PanelProps): ReactElement {
+  const {
+    initCollapsed = false,
+    parentId = null,
+    id = 'default-panel',
+    height = '100%',
+    class: panelClass = 'panel-primary',
+    collapsing = true,
+  } = props;
   const [collapsed, setCollapsed] = useState(false);
   const [activeView, setActiveView] = useState(0);
   const {t} = useTranslation();
@@ -19,14 +49,14 @@ const Panel = (props) => {
    * Similar to componentDidMount and componentDidUpdate.
    */
   useEffect(() => {
-    setCollapsed(props.initCollapsed);
+    setCollapsed(initCollapsed);
   }, []);
 
   /**
    * Toggle whether panel is displayed as collapsed
    */
   const toggleCollapsed = () => {
-    if (props.collapsing) {
+    if (collapsing) {
       setCollapsed(!collapsed);
     }
   };
@@ -36,7 +66,7 @@ const Panel = (props) => {
    *
    * @param {number} index
    */
-  const viewClicked = (index) => {
+  const viewClicked = (index: number) => {
     setActiveView(index);
     if (props.onChangeView) {
       props.onChangeView(index);
@@ -44,15 +74,15 @@ const Panel = (props) => {
   };
 
   // Panel Views (START)
-  let views = [];
-  let content = [];
-  let panelViews;
+  const views: ReactElement[] = [];
+  const content: ReactElement[] = [];
+  let panelViews: ReactElement | undefined;
   if (props.views) {
     for (const [index, view] of props.views.entries()) {
       views.push(
         <li key={index}
           onClick={() => viewClicked(index)}
-          className={index === activeView ? 'active' : null}>
+          className={index === activeView ? 'active' : undefined}>
           <a data-target={`${index}_panel_content`}>
             {view['title']}
           </a>
@@ -60,7 +90,7 @@ const Panel = (props) => {
       );
       content.push(
         <div key={index}
-          id={`${index}_panel_content_${props.id}`}
+          id={`${index}_panel_content_${id}`}
           className={index === activeView ?
             `${index}_panel_content` : `${index}_panel_content hidden`}>
           {view['content']}
@@ -86,8 +116,8 @@ const Panel = (props) => {
   // Add panel header, if title is set
   const panelHeading = props.title || props.views ? (
     <div className='panel-heading'
-      data-parent={props.parentId
-        ? `#${props.parentId}`
+      data-parent={parentId
+        ? `#${parentId}`
         : null}>
       <h3 className='panel-title'>
         {props.views && props.views[activeView]['title']
@@ -103,13 +133,13 @@ const Panel = (props) => {
         }
       </h3>
       {panelViews}
-      {props.collapsing
+      {collapsing
         ? <span className={collapsed ?
           'glyphicon glyphicon-chevron-down' :
           'glyphicon glyphicon-chevron-up'}
         onClick={toggleCollapsed}
         data-toggle='collapse'
-        data-target={`#${props.id}`}
+        data-target={`#${id}`}
         style={{cursor: 'pointer'}}/>
         : null}
     </div>
@@ -118,51 +148,25 @@ const Panel = (props) => {
   /**
    * Renders the React component.
    *
-   * @return {JSX.Element} - React markup for component.
+   * @return {ReactElement} - React markup for component.
    */
   return (
-    <div className={`panel ${props.class}`}
+    <div className={`panel ${panelClass}`}
       style={{height: props.panelSize, maxHeight: props.maxHeight}}>
       {panelHeading}
-      <div id={props.id}
+      <div id={id}
         className={props.collapsed ?
           'panel-collapse collapse' :
           'panel-collapse collapse in'}
         role='tabpanel'
         style={{height: 'calc(100% - 3em)'}}>
         <div className='panel-body'
-          style={{...props.style, height: props.height}}>
+          style={{...props.style, height}}>
           {content.length > 0 ? content : props.children}
         </div>
       </div>
     </div>
   );
-};
-Panel.propTypes = {
-  initCollapsed: PropTypes.bool,
-  collapsed: PropTypes.bool,
-  parentId: PropTypes.string,
-  id: PropTypes.string,
-  height: PropTypes.string,
-  title: PropTypes.string,
-  class: PropTypes.string,
-  children: PropTypes.node,
-  views: PropTypes.array,
-  onChangeView: PropTypes.func,
-  collapsing: PropTypes.bool,
-  bold: PropTypes.bool,
-  panelSize: PropTypes.string,
-  style: PropTypes.object,
-  children: PropTypes.node,
-  maxHeight: PropTypes.string,
-};
-Panel.defaultProps = {
-  initCollapsed: false,
-  parentId: null,
-  id: 'default-panel',
-  height: '100%',
-  class: 'panel-primary',
-  collapsing: true,
-};
+}
 
 export default Panel;
