@@ -2,8 +2,6 @@ import {Query} from './Query';
 import {Errors} from '../';
 import lorisFetch from '../lorisFetch';
 
-declare const loris: {BaseURL: string};
-
 export interface ErrorContext {
   key: string | number; // The key that triggered the custom message (e.g., 'ApiNetworkError' or 404)
   request: Request,

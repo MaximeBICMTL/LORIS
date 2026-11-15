@@ -4,7 +4,6 @@ import Breadcrumbs from 'jsx/Breadcrumbs';
 
 // Declared in smarty main.tpl
 declare const breadcrumbsRoot: any;
-declare const loris: any;
 
 /**
  * Update the DQT breadcrumbs based on the active tab

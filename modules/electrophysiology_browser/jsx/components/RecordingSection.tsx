@@ -17,9 +17,6 @@ import type {
 } from '../utils';
 
 declare const EEG_VIS_ENABLED: boolean;
-declare const loris: {
-  BaseURL: string;
-};
 
 let EEGLabSeriesProvider: React.ComponentType<any> | null = null;
 let SeriesRenderer: React.ComponentType<any> | null = null;

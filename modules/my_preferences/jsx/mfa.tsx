@@ -12,8 +12,6 @@ import hiStrings from '../locale/hi/LC_MESSAGES/my_preferences.json';
 import frStrings from '../locale/fr/LC_MESSAGES/my_preferences.json';
 import zhStrings from '../locale/zh/LC_MESSAGES/my_preferences.json';
 
-declare const loris: any;
-
 /**
  * Get a secret that could be used as a secret
  */
@@ -82,7 +80,7 @@ function MFAIndex(): React.ReactElement {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [key] = useState<string>(genPotentialSecret());
   const {t} = useTranslation();
-  const studyTitle = loris.config('studyTitle');
+  const studyTitle = loris.config('studyTitle') ?? '';
   const mfaUrl = 'otpauth://totp/'
     + encodeURI(studyTitle)
     + ':' + encodeURI(loris.user.username)

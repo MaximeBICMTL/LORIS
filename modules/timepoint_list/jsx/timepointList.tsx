@@ -11,7 +11,6 @@ import hiStrings from '../locale/hi/LC_MESSAGES/timepoint_list.json';
 import jaStrings from '../locale/ja/LC_MESSAGES/timepoint_list.json';
 import zhStrings from '../locale/zh/LC_MESSAGES/timepoint_list.json';
 
-declare const loris: {BaseURL: string};
 declare const $: (selector: string) => {DynamicTable: () => void};
 
 declare global {

@@ -252,7 +252,6 @@ function DataQueryApp(props: {
   </div>;
 }
 
-declare const loris: any;
 window.addEventListener('load', () => {
   i18n.addResourceBundle('ja', 'dataquery', jaStrings);
   i18n.addResourceBundle('hi', 'dataquery', hiStrings);

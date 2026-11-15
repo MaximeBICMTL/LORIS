@@ -13,8 +13,6 @@ import {
 } from 'jsx/Form';
 import frStrings from '../locale/fr/LC_MESSAGES/configuration.json';
 
-declare const loris: {BaseURL: string};
-
 type ConfigOptionMap = Record<string, string>;
 type ConfigOptionKey = 'dateFormat'
   | 'instruments'

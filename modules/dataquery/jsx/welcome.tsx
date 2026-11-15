@@ -18,7 +18,6 @@ import {useTranslation} from 'react-i18next';
 import {TFunction} from 'i18next';
 import 'I18nSetup';
 
-declare const loris: any;
 /**
  * Return the welcome tab for the DQT
  *

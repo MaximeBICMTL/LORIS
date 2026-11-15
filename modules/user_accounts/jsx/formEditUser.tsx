@@ -10,8 +10,6 @@ import hiStrings from '../locale/hi/LC_MESSAGES/user_accounts.json';
 import jaStrings from '../locale/ja/LC_MESSAGES/user_accounts.json';
 import zhStrings from '../locale/zh/LC_MESSAGES/user_accounts.json';
 
-declare const loris: {BaseURL: string};
-
 type FieldValue = boolean | string | string[];
 
 type FormField = {
